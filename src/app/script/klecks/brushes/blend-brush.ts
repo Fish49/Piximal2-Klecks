@@ -1,14 +1,18 @@
 import { BB } from '../../bb/bb';
-import { IRGB, IRGBA, isLayerFill } from '../kl-types';
-import { IBounds, IPressureInput } from '../../bb/bb-types';
-import { clamp } from '../../bb/math/math';
+import { isLayerFill, TRgb, TRgba } from '../kl-types';
+import { TBounds, TPressureInput } from '../../bb/bb-types';
+import { boundsOverlap, clamp, integerBounds } from '../../bb/math/math';
 import { BezierLine, TBezierLineCallback } from '../../bb/math/line';
 import { HISTORY_TILE_SIZE, KlHistory } from '../history/kl-history';
 import { getPushableLayerChange } from '../history/push-helpers/get-pushable-layer-change';
 import { copyImageData } from '../utils/copy-image-data';
 import { createArray } from '../../bb/base/base';
+import { createImageDataTile } from '../history/image-data-tile';
+import { getBinaryMask } from '../select-tool/get-binary-mask';
+import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bounds';
+import { getChangedTiles } from '../history/push-helpers/changed-tiles';
 
-interface IDrawBufferItem {
+type TDrawBufferItem = {
     x: number;
     y: number;
     size: number;
@@ -20,7 +24,7 @@ interface IDrawBufferItem {
     r: number;
     g: number;
     b: number;
-}
+};
 
 export class BlendBrush {
     // testing mode - context only gets updated when line is finished
@@ -28,7 +32,7 @@ export class BlendBrush {
 
     private context: CanvasRenderingContext2D = {} as CanvasRenderingContext2D;
     private layerId: string = 'NOT_SET';
-    private color: IRGB = {} as IRGB;
+    private color: TRgb = {} as TRgb;
     private size: number = 29; // radius - 0.5 - 99999
     private opacity: number = 0.6; // 0-1
     private blending: number = 0.65; // 0-1
@@ -37,23 +41,30 @@ export class BlendBrush {
     private settingSizePressure: boolean = true;
     private settingOpacityPressure: boolean = false;
 
-    private blendCol: IRGBA = { r: 0, g: 0, b: 0, a: 1 }; // todo docs
+    private blendCol: TRgba = { r: 0, g: 0, b: 0, a: 1 }; // todo docs
     private blendMix: number = 0.45; // todo docs
-    private mixCol: IRGB = { r: 0, g: 0, b: 0 }; // todo docs
-    private localColOld: IRGBA = {} as IRGBA; // todo docs
+    private mixCol: TRgb = { r: 0, g: 0, b: 0 }; // todo docs
+    private localColOld: TRgba = {} as TRgba; // todo docs
 
     private isDrawing: boolean = false;
-    private lastInput: IPressureInput = { x: 0, y: 0, pressure: 0 }; // todo docs
-    private lastInput2: IPressureInput = { x: 0, y: 0, pressure: 0 }; // todo docs
+    private lastInput: TPressureInput = { x: 0, y: 0, pressure: 0 }; // todo docs
+    private lastInput2: TPressureInput = { x: 0, y: 0, pressure: 0 }; // todo docs
     private bezierLine: undefined | BezierLine;
 
     private klHistory: KlHistory = {} as KlHistory;
-    private redrawBounds: IBounds | undefined;
+    private redrawBounds: TBounds | undefined;
     private cells: (ImageData | undefined)[] = [];
-    private drawBuffer: IDrawBufferItem[] = [];
+    private drawBuffer: TDrawBufferItem[] = [];
 
-    private updateRedrawBounds(bounds: IBounds): void {
-        this.redrawBounds = BB.updateBounds(this.redrawBounds, bounds);
+    private selectionBounds: TBounds | undefined;
+    private mask: Uint8Array | undefined;
+
+    private updateRedrawBounds(bounds: TBounds): void {
+        const boundsWithinSelection = boundsOverlap(bounds, this.selectionBounds);
+        if (!boundsWithinSelection) {
+            return;
+        }
+        this.redrawBounds = BB.updateBounds(this.redrawBounds, boundsWithinSelection);
     }
 
     private getCellsWidth(): number {
@@ -96,7 +107,7 @@ export class BlendBrush {
         this.redrawBounds = undefined;
     }
 
-    private getTouchedCells(bounds: IBounds): boolean[] {
+    private getTouchedCells(bounds: TBounds): boolean[] {
         const touchedCells = this.cells.map(() => false);
         const cellsW = this.getCellsWidth();
         bounds = {
@@ -118,10 +129,14 @@ export class BlendBrush {
      * @param bounds
      * @private
      */
-    private sliceBounds(bounds: IBounds): { index: number; bounds: IBounds }[] {
+    private sliceBounds(bounds: TBounds): { index: number; bounds: TBounds }[] {
+        const boundsWithinSelection = boundsOverlap(bounds, this.selectionBounds);
+        if (!boundsWithinSelection) {
+            return [];
+        }
         const cellsW = this.getCellsWidth();
-        const result: { index: number; bounds: IBounds }[] = [];
-        const touchedCells = this.getTouchedCells(bounds);
+        const result: { index: number; bounds: TBounds }[] = [];
+        const touchedCells = this.getTouchedCells(boundsWithinSelection);
 
         touchedCells.forEach((cell, i) => {
             if (!cell) {
@@ -134,10 +149,10 @@ export class BlendBrush {
             const cellHeight = this.cells[i]!.height;
 
             const inCellBounds = {
-                x1: Math.max(0, bounds.x1 - cellOffsetX),
-                y1: Math.max(0, bounds.y1 - cellOffsetY),
-                x2: Math.min(cellWidth - 1, bounds.x2 - cellOffsetX),
-                y2: Math.min(cellHeight - 1, bounds.y2 - cellOffsetY),
+                x1: Math.max(0, boundsWithinSelection.x1 - cellOffsetX),
+                y1: Math.max(0, boundsWithinSelection.y1 - cellOffsetY),
+                x2: Math.min(cellWidth - 1, boundsWithinSelection.x2 - cellOffsetX),
+                y2: Math.min(cellHeight - 1, boundsWithinSelection.y2 - cellOffsetY),
             };
             if (inCellBounds.x1 > inCellBounds.x2 || inCellBounds.y1 > inCellBounds.y2) {
                 return;
@@ -154,7 +169,7 @@ export class BlendBrush {
     /**
      * update copyImageData. copy over new regions if needed
      */
-    private copyFromCanvas(bounds: IBounds | undefined): void {
+    private copyFromCanvas(bounds: TBounds | undefined): void {
         if (!bounds) {
             return;
         }
@@ -175,45 +190,55 @@ export class BlendBrush {
                 ctx.fillRect(0, 0, HISTORY_TILE_SIZE, HISTORY_TILE_SIZE);
                 this.cells[i] = ctx.getImageData(0, 0, HISTORY_TILE_SIZE, HISTORY_TILE_SIZE);
             } else {
-                this.cells[i] = copyImageData(composedTile);
+                this.cells[i] = copyImageData(composedTile.data);
             }
         });
     }
 
-    private getAverage(x: number, y: number, size: number): IRGBA {
+    private getAverage(x: number, y: number, size: number): TRgba {
         size = Math.max(0.5, size * 0.75);
         const x1 = Math.max(0, Math.floor(x - size));
         const y1 = Math.max(0, Math.floor(y - size));
         const x2 = Math.min(this.context.canvas.width - 1, Math.ceil(x + size));
         const y2 = Math.min(this.context.canvas.height - 1, Math.ceil(y + size));
         if (x1 > x2 || y1 > y2) {
-            return {
-                r: 0,
-                g: 0,
-                b: 0,
-                a: 0,
-            };
+            return { r: 0, g: 0, b: 0, a: 0 };
         }
 
         let ar = 0,
             ag = 0,
             ab = 0,
-            aa = 0,
-            alpha;
+            aa = 0;
 
         const slicedBounds = this.sliceBounds({ x1, y1, x2, y2 });
+        const cellsW = this.getCellsWidth();
+
         slicedBounds.forEach((slice) => {
+            const cellOffsetX = (slice.index % cellsW) * HISTORY_TILE_SIZE;
+            const cellOffsetY = Math.floor(slice.index / cellsW) * HISTORY_TILE_SIZE;
             const width = this.cells[slice.index]!.width;
             const data = this.cells[slice.index]!.data;
             const bounds = slice.bounds;
 
-            for (let i = bounds.y1; i <= bounds.y2; i += 4) {
+            for (let i = bounds.y1, globalY = i + cellOffsetY; i <= bounds.y2; i++, globalY++) {
                 for (
-                    let e = bounds.x1, e2 = i * width * 4 + bounds.x1 * 4;
+                    let e = bounds.x1, globalX = e + cellOffsetX, e2 = (i * width + bounds.x1) * 4;
                     e <= bounds.x2;
-                    e += 4, e2 += 4 * 4
+                    e++, globalX++, e2 += 4
                 ) {
-                    alpha = data[e2 + 3];
+                    if (
+                        this.mask &&
+                        this.mask[globalY * this.context.canvas.width + globalX] === 0
+                    ) {
+                        // don't same where the mask is 0
+                        continue;
+                    }
+
+                    const alpha = data[e2 + 3] / 255;
+                    if (alpha === 0) {
+                        continue;
+                    }
+
                     ar += data[e2] * alpha;
                     ag += data[e2 + 1] * alpha;
                     ab += data[e2 + 2] * alpha;
@@ -228,15 +253,10 @@ export class BlendBrush {
             ab /= aa;
             aa = Math.min(1, aa);
         }
-        return {
-            r: ar,
-            g: ag,
-            b: ab,
-            a: aa,
-        };
+        return { r: ar, g: ag, b: ab, a: aa };
     }
 
-    private prepDot(x: number, y: number, size: number): IBounds | undefined {
+    private getDotBounds(x: number, y: number, size: number): TBounds | undefined {
         size = Math.max(0.5, size);
         const x1 = Math.max(0, Math.floor(x - size));
         const y1 = Math.max(0, Math.floor(y - size));
@@ -248,7 +268,7 @@ export class BlendBrush {
         return { x1, y1, x2, y2 };
     }
 
-    private drawDot(params: IDrawBufferItem): void {
+    private drawDot(params: TDrawBufferItem): void {
         // array with random numbers. faster than Math.random()
         let randI = 0;
         const randLen = params.size > 30 ? 1024 : 512; // lower lengths lead to noticeable patterns
@@ -297,7 +317,8 @@ export class BlendBrush {
             // i - y index within cell
             // e - x index within cell
 
-            // e2 - index in image data
+            // e2 - index in image data (a tile)
+            // mi - index in mask (one mask for the entire image)
 
             // ri - y index within image relative to dot-center
             // re - x index within image relative to dot-center
@@ -309,11 +330,18 @@ export class BlendBrush {
             ) {
                 for (
                     let e = slice.bounds.x1,
-                        e2 = i * cellWidth * 4 + slice.bounds.x1 * 4,
+                        mi =
+                            (i + cellOffsetY) * this.context.canvas.width +
+                            (slice.bounds.x1 + cellOffsetX),
+                        e2 = (i * cellWidth + slice.bounds.x1) * 4,
                         re = e + cellOffsetX - params.x;
                     e <= slice.bounds.x2;
-                    e++, e2 += 4, re++
+                    e++, mi++, e2 += 4, re++
                 ) {
+                    if (this.mask && this.mask[mi] === 0) {
+                        continue;
+                    }
+
                     // O = over -> brush-dot
                     // U = under -> image
 
@@ -400,7 +428,7 @@ export class BlendBrush {
         const avgX = x === undefined ? this.lastInput.x : x;
         const avgY = y === undefined ? this.lastInput.y : y;
 
-        let localColNew: IRGBA;
+        let localColNew: TRgba;
 
         if (this.blending === 0) {
             this.mixCol.r = this.color.r;
@@ -423,7 +451,7 @@ export class BlendBrush {
                         ? Math.max(0.5, p * this.size)
                         : Math.max(0.5, this.size),
                 ];
-                const bounds = this.prepDot(avgParams[0], avgParams[1], avgParams[2]);
+                const bounds = this.getDotBounds(avgParams[0], avgParams[1], avgParams[2]);
                 if (bounds) {
                     this.copyFromCanvas(bounds);
                 }
@@ -493,7 +521,7 @@ export class BlendBrush {
                 this.mixCol.g = localColNew.g;
                 this.mixCol.b = localColNew.b;
             }
-            const bounds = this.prepDot(val.x, val.y, localSize);
+            const bounds = this.getDotBounds(val.x, val.y, localSize);
             if (bounds) {
                 this.updateRedrawBounds(bounds);
                 this.drawBuffer.push({
@@ -558,7 +586,7 @@ export class BlendBrush {
         this.blending = b;
     }
 
-    setColor(c: IRGB): void {
+    setColor(c: TRgb): void {
         this.color = BB.copyObj(c);
     }
 
@@ -592,6 +620,11 @@ export class BlendBrush {
     }
 
     startLine(x: number, y: number, p: number): void {
+        const selection = this.klHistory.getComposed().selection.value;
+        this.selectionBounds = selection ? integerBounds(getMultiPolyBounds(selection)) : undefined;
+        this.mask = selection
+            ? getBinaryMask(selection, this.context.canvas.width, this.context.canvas.height)
+            : undefined;
         const totalCells =
             Math.ceil(this.context.canvas.width / HISTORY_TILE_SIZE) *
             Math.ceil(this.context.canvas.height / HISTORY_TILE_SIZE);
@@ -609,7 +642,7 @@ export class BlendBrush {
             this.mixCol.g = this.color.g;
             this.mixCol.b = this.color.b;
         } else {
-            this.copyFromCanvas(this.prepDot(x, y, localSize));
+            this.copyFromCanvas(this.getDotBounds(x, y, localSize));
 
             const average = this.getAverage(
                 x,
@@ -648,7 +681,7 @@ export class BlendBrush {
         this.drawBuffer = [];
 
         if (this.blending < 1 || this.blendCol.a > 0) {
-            const bounds = this.prepDot(x, y, localSize);
+            const bounds = this.getDotBounds(x, y, localSize);
             if (bounds) {
                 this.updateRedrawBounds(bounds);
                 this.drawBuffer.push({
@@ -712,105 +745,46 @@ export class BlendBrush {
 
         this.drawChangedCells();
 
-        this.klHistory.push(getPushableLayerChange(this.klHistory.getComposed(), this.cells));
+        if (this.cells.some((item) => item)) {
+            let cells = this.cells;
+            if (this.selectionBounds) {
+                const tilesInSelection = getChangedTiles(
+                    this.selectionBounds,
+                    this.context.canvas.width,
+                    this.context.canvas.height,
+                );
+                cells = cells.map((cell, index) => {
+                    return tilesInSelection[index] ? cell : undefined;
+                });
+            }
+
+            this.klHistory.push(
+                getPushableLayerChange(
+                    this.klHistory.getComposed(),
+                    cells.map((cell) => {
+                        return cell ? createImageDataTile(cell) : undefined;
+                    }),
+                ),
+            );
+        }
         this.cells = [];
     }
 
     drawLineSegment(x1: number, y1: number, x2: number, y2: number): void {
-        // todo - should sample more often for blending
-        this.lastInput.x = x2;
-        this.lastInput.y = y2;
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const steps = Math.ceil(distance / 10);
 
-        if (this.isDrawing || x1 === undefined) {
-            return;
+        this.startLine(x1, y1, 1);
+
+        for (let i = 1; i <= steps; i++) {
+            const t = i / steps;
+            const xi = x1 + dx * t;
+            const yi = y1 + dy * t;
+            this.goLine(xi, yi, 1, false);
         }
 
-        const totalCells =
-            Math.ceil(this.context.canvas.width / HISTORY_TILE_SIZE) *
-            Math.ceil(this.context.canvas.height / HISTORY_TILE_SIZE);
-        this.cells = createArray(totalCells, undefined);
-        this.redrawBounds = undefined;
-        this.drawBuffer = [];
-
-        this.copyFromCanvas(this.prepDot(x1, y1, Math.max(0.1, this.size)));
-        const average = this.getAverage(x1, y1, Math.max(0.1, this.size));
-
-        if (average.a === 0) {
-            this.blendCol = {
-                r: this.color.r,
-                g: this.color.g,
-                b: this.color.b,
-                a: 1 - this.blending,
-            };
-        } else {
-            this.blendCol = {
-                r: average.r,
-                g: average.g,
-                b: average.b,
-                a: average.a,
-            };
-        }
-
-        this.mixCol.r =
-            this.color.r * (1 - this.blendCol.a) +
-            (this.blending * this.blendCol.r + this.color.r * (1 - this.blending)) *
-                this.blendCol.a;
-        this.mixCol.g =
-            this.color.g * (1 - this.blendCol.a) +
-            (this.blending * this.blendCol.g + this.color.g * (1 - this.blending)) *
-                this.blendCol.a;
-        this.mixCol.b =
-            this.color.b * (1 - this.blendCol.a) +
-            (this.blending * this.blendCol.b + this.color.b * (1 - this.blending)) *
-                this.blendCol.a;
-
-        const p = 1;
-        const localOpacity = this.settingOpacityPressure ? this.opacity * p * p : this.opacity;
-        const localSize = this.settingSizePressure
-            ? Math.max(0.1, p * this.size)
-            : Math.max(0.1, this.size);
-
-        const mouseDist = Math.sqrt(Math.pow(x2 - x1, 2.0) + Math.pow(y2 - y1, 2.0));
-        const eX = (x2 - x1) / mouseDist;
-        const eY = (y2 - y1) / mouseDist;
-        const bDist = this.calcSpacing(localSize);
-        for (let loopDist = 0; loopDist <= mouseDist; loopDist += bDist) {
-            const bounds = this.prepDot(x1 + eX * loopDist, y1 + eY * loopDist, localSize);
-            if (bounds) {
-                this.copyFromCanvas(bounds);
-                this.drawBuffer.push({
-                    x: x1 + eX * loopDist,
-                    y: y1 + eY * loopDist,
-                    size: localSize,
-                    opacity: localOpacity,
-                    x1: bounds.x1,
-                    y1: bounds.y1,
-                    x2: bounds.x2,
-                    y2: bounds.y2,
-                    r: BB.mix(this.color.r, this.mixCol.r, this.blending),
-                    g: BB.mix(this.color.g, this.mixCol.g, this.blending),
-                    b: BB.mix(this.color.b, this.mixCol.b, this.blending),
-                });
-            }
-        }
-        this.drawBuffer.forEach((item) => {
-            this.drawDot(item);
-        });
-        this.drawBuffer = [];
-        this.updateRedrawBounds({
-            x1: x1 - localSize,
-            y1: y1 - localSize,
-            x2: x1 + localSize,
-            y2: y1 + localSize,
-        });
-        this.updateRedrawBounds({
-            x1: x2 - localSize,
-            y1: y2 - localSize,
-            x2: x2 + localSize,
-            y2: y2 + localSize,
-        });
-        this.drawChangedCells();
-        this.klHistory.push(getPushableLayerChange(this.klHistory.getComposed(), this.cells));
-        this.cells = [];
+        this.endLine();
     }
 }

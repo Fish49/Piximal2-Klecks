@@ -1,16 +1,15 @@
 import { KlSlider } from '../ui/components/kl-slider';
 import { EVENT_RES_MS } from './filters-consts';
-import { getSharedFx } from '../../fx-canvas/shared-fx';
-import { IFilterApply, IFilterGetDialogParam, TFilterGetDialogResult } from '../kl-types';
+import { TFilterApply, TFilterGetDialogParam, TFilterGetDialogResult } from '../kl-types';
 import { LANG } from '../../language/language';
 import { FxPreviewRenderer } from '../ui/project-viewport/fx-preview-renderer';
 import { TProjectViewportProject } from '../ui/project-viewport/project-viewport';
 import { Preview } from '../ui/project-viewport/preview';
-import { css } from '@emotion/css/dist/emotion-css.cjs';
 import { BB } from '../../bb/bb';
 import { testIsSmall } from '../ui/utils/test-is-small';
 import { getPreviewHeight, getPreviewWidth } from '../ui/utils/preview-size';
-import { canvasToLayerTiles } from '../history/push-helpers/canvas-to-layer-tiles';
+import { applyFxFilter } from './apply-fx-filter';
+import { css } from '../../bb/base/base';
 
 export type TFilterBrightnessContrastInput = {
     brightness: number;
@@ -18,7 +17,7 @@ export type TFilterBrightnessContrastInput = {
 };
 
 export const filterBrightnessContrast = {
-    getDialog(params: IFilterGetDialogParam) {
+    getDialog(params: TFilterGetDialogParam) {
         const rootEl = BB.el();
         const result: TFilterGetDialogResult<TFilterBrightnessContrastInput> = {
             element: rootEl,
@@ -44,6 +43,7 @@ export const filterBrightnessContrast = {
             onUpdate: (fxCanvas) => {
                 return fxCanvas.brightnessContrast(brightness, contrast);
             },
+            selection: klCanvas.getSelection(),
         });
 
         const brightnessSlider = new KlSlider({
@@ -100,14 +100,13 @@ export const filterBrightnessContrast = {
                 height: context.canvas.height,
                 layers: previewLayerArr,
             },
+            selection: klCanvas.getSelection(),
         });
         preview.render();
-        preview.getElement().classList.add(
-            css({
-                marginLeft: '-20px',
-                marginRight: '-20px',
-            }),
-        );
+        css(preview.getElement(), {
+            marginLeft: '-20px',
+            marginRight: '-20px',
+        });
         rootEl.append(preview.getElement());
 
         result.destroy = () => {
@@ -127,7 +126,7 @@ export const filterBrightnessContrast = {
         return result;
     },
 
-    apply(params: IFilterApply<TFilterBrightnessContrastInput>): boolean {
+    apply(params: TFilterApply<TFilterBrightnessContrastInput>): boolean {
         const context = params.layer.context;
         const brightness = params.input.brightness;
         const contrast = params.input.contrast;
@@ -135,36 +134,13 @@ export const filterBrightnessContrast = {
         if (!context) {
             return false;
         }
-        const fxCanvas = getSharedFx();
-        if (!fxCanvas) {
-            return false; // todo more specific error?
-        }
-        const texture = fxCanvas.texture(context.canvas);
-        fxCanvas.draw(texture).brightnessContrast(brightness, contrast).update();
-        context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-        context.drawImage(fxCanvas, 0, 0);
-        texture.destroy();
-
-        {
-            const layerMap = Object.fromEntries(
-                params.klCanvas.getLayers().map((layerItem) => {
-                    if (layerItem.id === params.layer.id) {
-                        return [
-                            layerItem.id,
-                            {
-                                tiles: canvasToLayerTiles(params.layer.canvas),
-                            },
-                        ];
-                    }
-
-                    return [layerItem.id, {}];
-                }),
-            );
-            klHistory.push({
-                layerMap,
-            });
-        }
-
-        return true;
+        return applyFxFilter(
+            context,
+            params.klCanvas.getSelection(),
+            (fxCanvas) => {
+                fxCanvas.brightnessContrast(brightness, contrast);
+            },
+            klHistory,
+        );
     },
 };

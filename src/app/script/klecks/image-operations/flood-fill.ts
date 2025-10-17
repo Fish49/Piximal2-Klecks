@@ -1,4 +1,4 @@
-import { IBounds } from '../../bb/bb-types';
+import { TBounds } from '../../bb/bb-types';
 
 /**
  * Set values in data within rect to 254, unless they're 255
@@ -46,9 +46,15 @@ function toleranceTest(
     );
 }
 
+// check is within selection
+function selectionMaskTest(selectionMaskArr: Uint8Array | undefined, i: number): boolean {
+    return !selectionMaskArr || !!selectionMaskArr[i];
+}
+
 /**
  *
  * @param srcArr Uint8ClampedArray rgba
+ * @param selectionMaskArr Uint8Array width x height, 0 or 1 values
  * @param targetArr Uint8Array
  * @param width int
  * @param height int
@@ -60,6 +66,7 @@ function toleranceTest(
  */
 function floodFill(
     srcArr: Uint8ClampedArray,
+    selectionMaskArr: Uint8Array | undefined,
     targetArr: Uint8Array,
     width: number,
     height: number,
@@ -68,7 +75,7 @@ function floodFill(
     tolerance: number,
     grow: number,
     isContiguous: boolean,
-): IBounds {
+): TBounds {
     const initR = srcArr[(py * width + px) * 4];
     const initG = srcArr[(py * width + px) * 4 + 1];
     const initB = srcArr[(py * width + px) * 4 + 2];
@@ -76,7 +83,7 @@ function floodFill(
     const view = new DataView(srcArr.buffer);
     const init = view.getUint32((py * width + px) * 4, true);
     const toleranceSquared = tolerance ** 2;
-    const bounds: IBounds = { x1: px, y1: py, x2: px, y2: py };
+    const bounds: TBounds = { x1: px, y1: py, x2: px, y2: py };
 
     if (isContiguous) {
         const q: number[] = []; // queue of pixel indices. they are already filled.
@@ -99,6 +106,7 @@ function floodFill(
                 e = i - 1;
                 if (
                     targetArr[e] !== 255 &&
+                    selectionMaskTest(selectionMaskArr, e) &&
                     (view.getUint32(e * 4, true) === init ||
                         (tolerance > 0 &&
                             toleranceTest(srcArr, initR, initG, initB, initA, toleranceSquared, e)))
@@ -113,6 +121,7 @@ function floodFill(
                 e = i + 1;
                 if (
                     targetArr[e] !== 255 &&
+                    selectionMaskTest(selectionMaskArr, e) &&
                     (view.getUint32(e * 4, true) === init ||
                         (tolerance > 0 &&
                             toleranceTest(srcArr, initR, initG, initB, initA, toleranceSquared, e)))
@@ -127,6 +136,7 @@ function floodFill(
                 e = i - width;
                 if (
                     targetArr[e] !== 255 &&
+                    selectionMaskTest(selectionMaskArr, e) &&
                     (view.getUint32(e * 4, true) === init ||
                         (tolerance > 0 &&
                             toleranceTest(srcArr, initR, initG, initB, initA, toleranceSquared, e)))
@@ -141,6 +151,7 @@ function floodFill(
                 e = i + width;
                 if (
                     targetArr[e] !== 255 &&
+                    selectionMaskTest(selectionMaskArr, e) &&
                     (view.getUint32(e * 4, true) === init ||
                         (tolerance > 0 &&
                             toleranceTest(srcArr, initR, initG, initB, initA, toleranceSquared, e)))
@@ -157,7 +168,8 @@ function floodFill(
             for (let x = 0; x < width; x++, i++) {
                 if (
                     view.getUint32(i * 4, true) === init ||
-                    (tolerance > 0 &&
+                    (selectionMaskTest(selectionMaskArr, i) &&
+                        tolerance > 0 &&
                         toleranceTest(srcArr, initR, initG, initB, initA, toleranceSquared, i))
                 ) {
                     targetArr[i] = 255;
@@ -281,6 +293,8 @@ function floodFill(
  */
 export function floodFillBits(
     rgbaArr: Uint8ClampedArray,
+    // width x height, 0 or 1 values
+    selectionMaskArr: Uint8Array | undefined,
     width: number, // int
     height: number, // int
     x: number, // int
@@ -290,7 +304,7 @@ export function floodFillBits(
     isContiguous: boolean,
 ): {
     data: Uint8Array;
-    bounds: IBounds; // what area changed
+    bounds: TBounds; // what area changed
 } {
     x = Math.round(x); // just in case
     y = Math.round(y);
@@ -299,6 +313,7 @@ export function floodFillBits(
 
     const bounds = floodFill(
         rgbaArr,
+        selectionMaskArr,
         resultArr,
         width,
         height,

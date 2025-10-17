@@ -1,14 +1,14 @@
 import './polyfills/polyfills';
 import { KlApp } from './app/kl-app';
-import { IKlProject } from './klecks/kl-types';
-import { SaveReminder } from './klecks/ui/components/save-reminder';
+import { TKlProject, TKlProjectWithOptionalId } from './klecks/kl-types';
 import { klPsdToKlProject, readPsd } from './klecks/storage/psd';
 import { LANG } from './language/language';
 import { loadAgPsd, TAgPsd } from './klecks/storage/load-ag-psd';
-import { klConfig } from './klecks/kl-config';
+import { KL_CONFIG } from './klecks/kl-config';
+import { randomUuid } from './bb/base/base';
 
-export interface IEmbedParams {
-    project?: IKlProject;
+export type TEmbedParams = {
+    project?: TKlProject;
     psdBlob?: Blob;
     onSubmit: (onSuccess: () => void, onError: () => void) => void;
     embedUrl: string;
@@ -16,12 +16,13 @@ export interface IEmbedParams {
     bottomBar?: HTMLElement;
     aboutEl?: HTMLElement;
     disableAutoFit?: boolean; // disable automatic Fit to View for small canvases
-}
+    enableImageDropperImport?: boolean; // default false
+};
 
-export interface IReadPSD {
+export type TReadPSD = {
     blob: Blob;
-    callback: (k: IKlProject | null) => void;
-}
+    callback: (k: TKlProject | null) => void;
+};
 
 /**
  * Note: Wrapped by EmbedWrapper, which quickly provides feedback for the user without having loaded everything.
@@ -30,43 +31,38 @@ export interface IReadPSD {
 export class Embed {
     private isInitialized: boolean = false;
     private klApp: KlApp | undefined;
-    private readonly psdQueue: IReadPSD[] = []; // queue of psds waiting while ag-psd is loading
+    private readonly psdQueue: TReadPSD[] = []; // queue of psds waiting while ag-psd is loading
     private agPsd: TAgPsd | 'error' | undefined;
     private loadingScreenEl: HTMLElement | null;
     private loadingScreenTextEl: HTMLElement | null;
 
-    onProjectReady(project: IKlProject) {
+    onProjectReady(project: TKlProjectWithOptionalId) {
         try {
             if (this.isInitialized) {
                 throw new Error('Already called openProject');
             }
             this.isInitialized = true;
 
-            const saveReminder = new SaveReminder(
-                false,
-                false,
-                () => {},
-                () => (this.klApp ? this.klApp.isDrawing() : false),
-                null,
-                null,
-            );
+            const projectWithId = {
+                ...project,
+                projectId: project.projectId ?? randomUuid(),
+            };
             this.klApp = new KlApp({
-                project,
-                saveReminder,
+                project: projectWithId,
                 bottomBar: this.p.bottomBar,
                 aboutEl: this.p.aboutEl,
                 embed: {
                     url: this.p.embedUrl,
+                    enableImageDropperImport: !!this.p.enableImageDropperImport,
                     onSubmit: this.p.onSubmit,
                 },
             });
-            saveReminder.init();
 
-            this.loadingScreenEl && this.loadingScreenEl.remove();
+            void this.loadingScreenEl?.remove();
             this.loadingScreenEl = null;
             this.loadingScreenTextEl = null;
 
-            document.body.append(this.klApp.getEl());
+            document.body.append(this.klApp.getElement());
         } catch (e) {
             if (this.loadingScreenTextEl) {
                 this.loadingScreenTextEl.textContent = '❌ ' + e;
@@ -79,7 +75,7 @@ export class Embed {
     }
 
     // ----------------------------------- public -----------------------------------
-    constructor(private p: IEmbedParams) {
+    constructor(private p: TEmbedParams) {
         this.loadingScreenEl = document.getElementById('loading-screen');
         this.loadingScreenTextEl = document.getElementById('loading-screen-text');
         if (this.loadingScreenTextEl) {
@@ -87,14 +83,14 @@ export class Embed {
         }
 
         if (p.disableAutoFit) {
-            klConfig.disableAutoFit = true;
+            KL_CONFIG.disableAutoFit = true;
         }
         if (p.project) {
             this.onProjectReady(p.project);
         }
     }
 
-    openProject: Embed['onProjectReady'] = (project) => {
+    openProject = (project: TKlProjectWithOptionalId) => {
         this.onProjectReady(project);
     };
 
@@ -121,12 +117,12 @@ export class Embed {
         return await this.klApp.getPSD();
     }
 
-    readPSDs(psds: IReadPSD[]) {
+    readPSDs(psds: TReadPSD[]) {
         if (psds.length === 0) {
             return;
         }
 
-        const readItem = (item: IReadPSD) => {
+        const readItem = (item: TReadPSD) => {
             try {
                 const psd = (this.agPsd as any).readPsd(item.blob as any);
                 const project = klPsdToKlProject(readPsd(psd));

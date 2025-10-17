@@ -1,9 +1,10 @@
 import { KeyListener } from '../../../../bb/input/key-listener';
-import { dialogCounter } from '../modal-count';
+import { DIALOG_COUNTER } from '../modal-count';
 import { BB } from '../../../../bb/bb';
 import { LANG } from '../../../../language/language';
 import './scroll-fix';
-import cancelImg from '/src/app/img/ui/cancel.svg';
+import cancelImg from 'url:/src/app/img/ui/cancel.svg';
+import { css } from '../../../../bb/base/base';
 
 /**
  * popup that fill whole height, with some padding.
@@ -31,7 +32,7 @@ export class DynamicModal {
         width: number;
         isMaxHeight: boolean; // todo - not implemented
     }) {
-        dialogCounter.increase();
+        DIALOG_COUNTER.increase();
         this.onClose = p.onClose;
         this.parent = document.body;
         this.rootEl = BB.el({
@@ -84,7 +85,7 @@ export class DynamicModal {
             const elW = popupEl.offsetWidth;
             const elH = popupEl.offsetHeight;
 
-            BB.css(popupEl, {
+            css(popupEl, {
                 left: Math.max(0, (window.innerWidth - elW) / 2) + 'px',
                 top: Math.max(20, (window.innerHeight - elH) / 2 - elH * 0.2) + 'px',
             });
@@ -150,7 +151,7 @@ export class DynamicModal {
 
     // ---- interface ----
     close(): void {
-        dialogCounter.decrease();
+        DIALOG_COUNTER.decrease();
         BB.destroyEl(this.rootEl);
         this.rootEl.remove();
         window.removeEventListener('resize', this.updatePos);

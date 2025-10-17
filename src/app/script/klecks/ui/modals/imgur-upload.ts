@@ -1,10 +1,10 @@
 import { BB } from '../../../bb/bb';
 import { KL } from '../../kl';
-import { SaveReminder } from '../components/save-reminder';
 import { KlCanvas } from '../../canvas/kl-canvas';
 import { LANG } from '../../../language/language';
-import loadingImg from '/src/app/img/ui/loading.gif';
+import loadingImg from 'url:/src/app/img/ui/loading.gif';
 import { canvasToBlob } from '../../../bb/base/canvas';
+import { css } from '../../../bb/base/base';
 
 type TImgurUploadResponse = {
     // just a subset
@@ -40,10 +40,10 @@ async function upload(
     const gif = newTab.document.createElement('img');
     gif.src = loadingImg;
     label.append(gif);
-    BB.css(gif, {
+    css(gif, {
         filter: 'invert(1)',
     });
-    BB.css(newTab.document.body, {
+    css(newTab.document.body, {
         backgroundColor: '#121211',
         backgroundImage: 'linear-gradient(#2b2b2b 0%, #121211 50%)',
         backgroundRepeat: 'no-repeat',
@@ -55,7 +55,7 @@ async function upload(
     labelText.textContent = LANG('upload-uploading');
 
     newTab.document.body.append(label);
-    BB.css(label, {
+    css(label, {
         marginLeft: 'auto',
         marginRight: 'auto',
         marginTop: '100px',
@@ -101,20 +101,21 @@ async function upload(
 export function imgurUpload(
     klCanvas: KlCanvas,
     klRootEl: HTMLElement,
-    saveReminder: SaveReminder,
     imgurKey: string, // API key
+    onUploaded: () => void,
 ): void {
     if (!imgurKey) {
         throw new Error('imgur key missing');
     }
 
-    const inputTitle = BB.el({ tagName: 'input' });
+    const inputTitle = BB.el({ tagName: 'input', custom: { name: 'image-title' } });
     inputTitle.type = 'text';
     inputTitle.value = LANG('upload-title-untitled');
     const inputDescription = BB.el({
         tagName: 'textarea',
         custom: {
             rows: '2',
+            name: 'image-description',
         },
         css: {
             width: '100%',
@@ -145,7 +146,7 @@ export function imgurUpload(
         ],
         ignoreFocus: true,
     });
-    BB.css(typeRadio.getElement(), {
+    css(typeRadio.getElement(), {
         marginBottom: '10px',
     });
 
@@ -189,7 +190,7 @@ export function imgurUpload(
                         message: `<h3>${LANG('upload-success')}</h3><br>${LANG('upload-delete')}<br><a target='_blank' rel="noopener noreferrer" href='https://imgur.com/delete/${result.deletehash}'>imgur.com/delete/${result.deletehash}</a><br><br>`,
                         buttons: ['Ok'],
                     });
-                    saveReminder.reset();
+                    onUploaded();
                 } catch (e) {
                     KL.popup({
                         target: klRootEl,

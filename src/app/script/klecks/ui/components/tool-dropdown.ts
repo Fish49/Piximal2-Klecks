@@ -1,15 +1,16 @@
 import { BB } from '../../../bb/bb';
-import { dialogCounter } from '../modals/modal-count';
-import toolPaintImg from '/src/app/img/ui/tool-paint.svg';
-import toolFillImg from '/src/app/img/ui/tool-fill.svg';
-import toolGradientImg from '/src/app/img/ui/tool-gradient.svg';
-import toolTextImg from '/src/app/img/ui/tool-text.svg';
-import toolShapeImg from '/src/app/img/ui/tool-shape.svg';
-import toolSelectImg from '/src/app/img/ui/tool-select.svg';
-import caretDownImg from '/src/app/img/ui/caret-down.svg';
+import { DIALOG_COUNTER } from '../modals/modal-count';
+import toolPaintImg from 'url:/src/app/img/ui/tool-paint.svg';
+import toolFillImg from 'url:/src/app/img/ui/tool-fill.svg';
+import toolGradientImg from 'url:/src/app/img/ui/tool-gradient.svg';
+import toolTextImg from 'url:/src/app/img/ui/tool-text.svg';
+import toolShapeImg from 'url:/src/app/img/ui/tool-shape.svg';
+import toolSelectImg from 'url:/src/app/img/ui/tool-select.svg';
 import { LANG } from '../../../language/language';
 import { TToolType } from '../../kl-types';
 import { PointerListener } from '../../../bb/input/pointer-listener';
+import { c } from '../../../bb/base/c';
+import { css } from '../../../bb/base/base';
 
 type TDropdownButton = {
     wrapper: HTMLElement;
@@ -41,7 +42,9 @@ export class ToolDropdown {
     private readonly imArr;
 
     private updateButton() {
-        this.activeButton.title = this.titleArr[this.currentActiveIndex];
+        this.activeButton.title =
+            this.titleArr[this.currentActiveIndex] +
+            (this.isActive ? ' (' + LANG('tool-more-tools-click-again') + ')' : '');
         this.activeButtonIm.style.backgroundImage =
             "url('" + this.imArr[this.currentActiveIndex] + "')";
     }
@@ -180,18 +183,8 @@ export class ToolDropdown {
 
         this.arrowButton = BB.el({
             parent: this.activeButton,
-            className: 'kl-tooldropdown-caret dark-invert',
-            css: {
-                position: 'absolute',
-                right: '1px',
-                width: '18px',
-                height: '18px',
-                cursor: 'pointer',
-
-                backgroundImage: "url('" + caretDownImg + "')",
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'center',
-            },
+            className: 'kl-tooldropdown-caret',
+            content: c('.dark-invert'),
             title: LANG('tool-more-tools'),
             onClick: (e) => {
                 e.preventDefault();
@@ -317,10 +310,10 @@ export class ToolDropdown {
         }
 
         const showDropdown = () => {
-            if (dialogCounter.get() > 0) {
+            if (DIALOG_COUNTER.get() > 0) {
                 return;
             }
-            dialogCounter.increase(0.5);
+            DIALOG_COUNTER.increase(0.5);
             isOpen = true;
 
             for (let i = 0; i < this.optionArr.length; i++) {
@@ -335,7 +328,7 @@ export class ToolDropdown {
         };
 
         const closeDropdown = () => {
-            dialogCounter.decrease(0.5);
+            DIALOG_COUNTER.decrease(0.5);
             isOpen = false;
             this.arrowButton.style.removeProperty('opacity');
             this.arrowButton.style.removeProperty('pointer-events');
@@ -354,13 +347,10 @@ export class ToolDropdown {
         for (let i = 0; i < this.optionArr.length; i++) {
             this.dropdownBtnArr[i].setIsSmall(b);
         }
-        if (b) {
-            this.arrowButton.style.width = '14px';
-            this.arrowButton.style.height = '14px';
-        } else {
-            this.arrowButton.style.width = '18px';
-            this.arrowButton.style.height = '18px';
-        }
+        css(this.arrowButton, {
+            width: b ? '14px' : '18px',
+            height: b ? '14px' : '18px',
+        });
     }
 
     setActive(activeStr: TToolType): void {
@@ -377,6 +367,7 @@ export class ToolDropdown {
         } else {
             this.isActive = false;
             this.activeButton.classList.remove('toolspace-row-button-activated');
+            this.updateButton();
         }
     }
 

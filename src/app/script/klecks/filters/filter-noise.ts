@@ -1,10 +1,10 @@
 import { BB } from '../../bb/bb';
 import {
-    IFilterApply,
-    IFilterGetDialogParam,
+    TFilterApply,
+    TFilterGetDialogParam,
     TFilterGetDialogResult,
-    IRGB,
     TMixMode,
+    TRgb,
 } from '../kl-types';
 import { LANG } from '../../language/language';
 import { KlSlider } from '../ui/components/kl-slider';
@@ -16,18 +16,22 @@ import { translateBlending } from '../canvas/translate-blending';
 import { KL } from '../kl';
 import { ColorConverter } from '../../bb/color/color';
 import { Checkbox } from '../ui/components/checkbox';
-import { TFxCanvas } from '../../fx-canvas/fx-canvas-types';
-import { throwIfNull } from '../../bb/base/base';
+import { TWrappedTexture } from '../../fx-canvas/fx-canvas-types';
+import { css, throwIfNull } from '../../bb/base/base';
 import { FxPreviewRenderer } from '../ui/project-viewport/fx-preview-renderer';
 import { Preview } from '../ui/project-viewport/preview';
-import { css } from '@emotion/css/dist/emotion-css.cjs';
 import { TProjectViewportProject } from '../ui/project-viewport/project-viewport';
 import { getPreviewHeight, getPreviewWidth } from '../ui/utils/preview-size';
 import { testIsSmall } from '../ui/utils/test-is-small';
 import { canvasToLayerTiles } from '../history/push-helpers/canvas-to-layer-tiles';
+import { noise } from '../../fx-canvas/filters/noise';
+import { drawSelectionMask } from '../../bb/base/canvas';
+import { getPushableLayerChange } from '../history/push-helpers/get-pushable-layer-change';
+import { integerBounds } from '../../bb/math/math';
+import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bounds';
 
 // see noise(...) in fx-canvas
-interface INoisePreset {
+type TNoisePreset = {
     type: number;
     scaleX: number;
     scaleY: number;
@@ -39,16 +43,16 @@ interface INoisePreset {
     brightness: number;
     contrast: number;
     isReversed: boolean;
-}
+};
 
 type TNoiseChannels = 'rgb' | 'alpha';
 
-interface INoiseSettings extends INoisePreset {
+type TNoiseSettings = TNoisePreset & {
     seed?: number;
-    colA?: IRGB;
-    colB?: IRGB;
+    colA?: TRgb;
+    colB?: TRgb;
     channels?: TNoiseChannels; // default rgb
-}
+};
 
 export type TFilterNoiseInput = {
     seed: number;
@@ -60,11 +64,11 @@ export type TFilterNoiseInput = {
 
     // only for channels = rgb
     mixModeStr: GlobalCompositeOperation; // how mixed with image
-    colA: IRGB;
-    colB: IRGB;
+    colA: TRgb;
+    colB: TRgb;
 };
 
-const presetArr: INoisePreset[] = [
+const presetArr: TNoisePreset[] = [
     // each pixel random value
     {
         type: 0,
@@ -186,28 +190,38 @@ const presetArr: INoisePreset[] = [
     },
 ];
 
-function drawNoise(fxCanvas: TFxCanvas, settings: INoiseSettings): void {
-    fxCanvas
-        .noise(
-            settings.seed,
-            settings.type,
-            [settings.scaleX, settings.scaleY],
-            [fxCanvas.width / 2, fxCanvas.height / 2],
-            settings.octaves,
-            settings.samples,
-            settings.peaks,
-            settings.brightness,
-            settings.contrast,
-            settings.isReversed,
-            settings.colA,
-            settings.colB,
-            settings.channels ? settings.channels : 'rgb',
-        )
-        .update();
+function createNoiseSettings(input: TFilterNoiseInput): TNoiseSettings {
+    const result: TNoiseSettings = BB.copyObj(presetArr[input.presetIndex]) as TNoiseSettings;
+    result.seed = input.seed;
+    result.scaleX = (result.scaleX * input.scale) / 50;
+    result.scaleY = (result.scaleY * input.scale) / 50;
+    result.colA = input.colA;
+    result.colB = input.colB;
+    result.isReversed = input.isReversed ? !result.isReversed : result.isReversed;
+    result.channels = input.channels;
+    return result;
+}
+
+function createNoiseParameters(settings: TNoiseSettings): Parameters<typeof noise> {
+    return [
+        settings.seed,
+        settings.type,
+        [settings.scaleX, settings.scaleY],
+        [settings.offsetX, settings.offsetY],
+        settings.octaves,
+        settings.samples,
+        settings.peaks,
+        settings.brightness,
+        settings.contrast,
+        settings.isReversed,
+        settings.colA,
+        settings.colB,
+        settings.channels ? settings.channels : 'rgb',
+    ];
 }
 
 export const filterNoise = {
-    getDialog(params: IFilterGetDialogParam) {
+    getDialog(params: TFilterGetDialogParam) {
         const context = params.context;
         const klCanvas = params.klCanvas;
         if (!context || !klCanvas) {
@@ -229,10 +243,10 @@ export const filterNoise = {
 
             presetArr.forEach((preset) => {
                 const thumbImg = new Image();
-                const presetCopy = BB.copyObj(preset) as INoiseSettings;
-                presetCopy.scaleX /= 10;
-                presetCopy.scaleY /= 10;
-                drawNoise(fxCanvas, presetCopy);
+                const settings = BB.copyObj(preset) as TNoiseSettings;
+                settings.scaleX /= 10;
+                settings.scaleY /= 10;
+                fxCanvas.noise(...createNoiseParameters(settings)).update();
                 ctx.drawImage(fxCanvas, 0, 0);
                 thumbImg.src = canvas.toDataURL('image/png');
                 thumbImgArr.push(thumbImg);
@@ -250,7 +264,7 @@ export const filterNoise = {
             result.width = getPreviewWidth(isSmall);
         }
 
-        const settingsObj: TFilterNoiseInput = {
+        const noiseInput: TFilterNoiseInput = {
             seed: Math.random() * 300,
             presetIndex: 0,
             scale: 50,
@@ -264,7 +278,7 @@ export const filterNoise = {
 
         const presetOptions = new Options({
             optionArr: thumbImgArr.map((img, index) => {
-                BB.css(img, {
+                css(img, {
                     margin: '1px',
                     borderRadius: '3px',
                     transition: 'all 0.1s ease-in-out',
@@ -276,11 +290,13 @@ export const filterNoise = {
             }),
             initId: '0',
             onChange: (id) => {
-                settingsObj.presetIndex = Number(id);
+                noiseInput.presetIndex = Number(id);
                 update();
             },
+            css: {
+                marginBottom: '10px',
+            },
         });
-        presetOptions.getElement().style.marginBottom = '10px';
         rootEl.append(presetOptions.getElement());
 
         const scaleSlider = new KlSlider({
@@ -289,11 +305,11 @@ export const filterNoise = {
             height: 30,
             min: 1,
             max: 1000,
-            value: settingsObj.scale,
+            value: noiseInput.scale,
             eventResMs: EVENT_RES_MS,
             curve: BB.powerSplineInput(1, 1000, 0.1),
             onChange: (value) => {
-                settingsObj.scale = value;
+                noiseInput.scale = value;
                 update();
             },
         });
@@ -305,12 +321,12 @@ export const filterNoise = {
             height: 30,
             min: 1 / 100,
             max: 1,
-            value: settingsObj.opacity,
+            value: noiseInput.opacity,
             eventResMs: EVENT_RES_MS,
             toValue: (displayValue) => displayValue / 100,
             toDisplayValue: (value) => value * 100,
             onChange: (value) => {
-                settingsObj.opacity = value;
+                noiseInput.opacity = value;
                 update();
             },
         });
@@ -338,7 +354,7 @@ export const filterNoise = {
             ],
             initId: 'rgb',
             onChange: (id: TNoiseChannels) => {
-                settingsObj.channels = id;
+                noiseInput.channels = id;
                 if (id === 'rgb') {
                     row2El.style.visibility = '';
                 } else {
@@ -351,10 +367,11 @@ export const filterNoise = {
         const reverseToggle = new Checkbox({
             label: LANG('reverse'),
             callback: (val) => {
-                settingsObj.isReversed = val;
+                noiseInput.isReversed = val;
                 update();
             },
             allowTab: true,
+            name: 'reverse-gradient',
         });
 
         const mixModes: (TMixMode | undefined)[] = [
@@ -386,11 +403,12 @@ export const filterNoise = {
             optionArr: mixModes.map((item) => {
                 return item ? ([item, translateBlending(item)] as [TMixMode, string]) : undefined;
             }),
-            initValue: settingsObj.mixModeStr,
+            initValue: noiseInput.mixModeStr,
             onChange: (val: GlobalCompositeOperation) => {
-                settingsObj.mixModeStr = val;
+                noiseInput.mixModeStr = val;
                 update();
             },
+            name: 'blend-mode',
         });
         blendSelect.getElement().title = LANG('layers-blending');
 
@@ -407,11 +425,11 @@ export const filterNoise = {
         };
         const colAInput = KL.input({
             type: 'color',
-            init: '#' + ColorConverter.toHexString(settingsObj.colA),
+            init: '#' + ColorConverter.toHexString(noiseInput.colA),
             callback: (val) => {
                 const newColor = ColorConverter.hexToRGB(val);
                 if (newColor) {
-                    settingsObj.colA = newColor;
+                    noiseInput.colA = newColor;
                     update();
                 }
             },
@@ -420,11 +438,11 @@ export const filterNoise = {
 
         const colBInput = KL.input({
             type: 'color',
-            init: '#' + ColorConverter.toHexString(settingsObj.colB),
+            init: '#' + ColorConverter.toHexString(noiseInput.colB),
             callback: (val) => {
                 const newColor = ColorConverter.hexToRGB(val);
                 if (newColor) {
-                    settingsObj.colB = newColor;
+                    noiseInput.colB = newColor;
                     update();
                 }
             },
@@ -446,44 +464,20 @@ export const filterNoise = {
         const fxPreviewRenderer = new FxPreviewRenderer({
             original: context.canvas,
             onUpdate: (fxCanvas, transform) => {
-                const settingsCopy = BB.copyObj(
-                    presetArr[settingsObj.presetIndex],
-                ) as INoiseSettings;
-                settingsCopy.seed = settingsObj.seed;
-                settingsCopy.scaleX =
-                    ((settingsCopy.scaleX * settingsObj.scale) / 50) * transform.scaleX;
-                settingsCopy.scaleY =
-                    ((settingsCopy.scaleY * settingsObj.scale) / 50) * transform.scaleY;
-                settingsCopy.colA = settingsObj.colA;
-                settingsCopy.colB = settingsObj.colB;
-                settingsCopy.isReversed = settingsObj.isReversed
-                    ? !settingsCopy.isReversed
-                    : settingsCopy.isReversed;
-                settingsCopy.channels = settingsObj.channels;
-                settingsCopy.offsetX = (context.canvas.width / 2) * transform.scaleX + transform.x;
-                settingsCopy.offsetY = (context.canvas.height / 2) * transform.scaleY + transform.y;
-
-                return fxCanvas.noise(
-                    settingsCopy.seed,
-                    settingsCopy.type,
-                    [settingsCopy.scaleX, settingsCopy.scaleY],
-                    [settingsCopy.offsetX, settingsCopy.offsetY],
-                    settingsCopy.octaves,
-                    settingsCopy.samples,
-                    settingsCopy.peaks,
-                    settingsCopy.brightness,
-                    settingsCopy.contrast,
-                    settingsCopy.isReversed,
-                    settingsCopy.colA,
-                    settingsCopy.colB,
-                    settingsCopy.channels ? settingsCopy.channels : 'rgb',
-                );
+                const settings = createNoiseSettings(noiseInput);
+                settings.scaleX *= transform.scaleX;
+                settings.scaleY *= transform.scaleY;
+                settings.offsetX = (context.canvas.width / 2) * transform.scaleX + transform.x;
+                settings.offsetY = (context.canvas.height / 2) * transform.scaleY + transform.y;
+                return fxCanvas.noise(...createNoiseParameters(settings));
             },
             postMix: {
-                opacity: settingsObj.opacity,
+                opacity: noiseInput.opacity,
                 operation:
-                    settingsObj.channels === 'alpha' ? 'destination-out' : settingsObj.mixModeStr,
+                    noiseInput.channels === 'alpha' ? 'destination-out' : noiseInput.mixModeStr,
             },
+            selection: klCanvas.getSelection(),
+            isMaskingWithEmptyOriginal: true,
         });
 
         const previewLayerArr: TProjectViewportProject['layers'] = [];
@@ -510,21 +504,20 @@ export const filterNoise = {
                 height: context.canvas.height,
                 layers: previewLayerArr,
             },
+            selection: klCanvas.getSelection(),
         });
         preview.render();
-        preview.getElement().classList.add(
-            css({
-                marginLeft: '-20px',
-                marginRight: '-20px',
-            }),
-        );
+        css(preview.getElement(), {
+            marginLeft: '-20px',
+            marginRight: '-20px',
+        });
         rootEl.append(preview.getElement());
 
         function update(): void {
             fxPreviewRenderer.setPostMix({
-                opacity: settingsObj.opacity,
+                opacity: noiseInput.opacity,
                 operation:
-                    settingsObj.channels === 'alpha' ? 'destination-out' : settingsObj.mixModeStr,
+                    noiseInput.channels === 'alpha' ? 'destination-out' : noiseInput.mixModeStr,
             });
             preview.render();
         }
@@ -541,13 +534,13 @@ export const filterNoise = {
         };
         result.getInput = function (): TFilterNoiseInput {
             result.destroy!();
-            return BB.copyObj(settingsObj);
+            return BB.copyObj(noiseInput);
         };
 
         return result;
     },
 
-    apply(params: IFilterApply<TFilterNoiseInput>): boolean {
+    apply(params: TFilterApply<TFilterNoiseInput>): boolean {
         const context = params.layer.context;
         const klCanvas = params.klCanvas;
         const klHistory = params.klHistory;
@@ -559,22 +552,29 @@ export const filterNoise = {
         if (!fxCanvas) {
             return false; // todo more specific error?
         }
-        const texture = fxCanvas.texture(context.canvas);
-        fxCanvas.draw(texture).update();
-        texture.destroy();
 
         const input = params.input;
-        const presetCopy: INoiseSettings = BB.copyObj(
-            presetArr[input.presetIndex],
-        ) as INoiseSettings;
-        presetCopy.seed = input.seed;
-        presetCopy.scaleX = (presetCopy.scaleX * input.scale) / 50;
-        presetCopy.scaleY = (presetCopy.scaleY * input.scale) / 50;
-        presetCopy.colA = input.colA;
-        presetCopy.colB = input.colB;
-        presetCopy.isReversed = input.isReversed ? !presetCopy.isReversed : presetCopy.isReversed;
-        presetCopy.channels = input.channels;
-        drawNoise(fxCanvas, presetCopy);
+        const selection = klCanvas.getSelection();
+        let maskTexture: TWrappedTexture | undefined;
+        if (selection) {
+            const maskCanvas = BB.canvas(context.canvas.width, context.canvas.height);
+            const maskContext = BB.ctx(maskCanvas);
+            drawSelectionMask(selection, maskContext);
+            maskTexture = fxCanvas.texture(maskCanvas);
+            BB.freeCanvas(maskCanvas);
+        }
+        fxCanvas.initialize(context.canvas.width, context.canvas.height);
+        {
+            const settings = createNoiseSettings(input);
+            settings.offsetX = context.canvas.width / 2;
+            settings.offsetY = context.canvas.height / 2;
+            fxCanvas.noise(...createNoiseParameters(settings)).update();
+        }
+        if (maskTexture) {
+            fxCanvas.multiplyAlpha().mask(maskTexture).unmultiplyAlpha();
+            maskTexture.destroy();
+        }
+        fxCanvas.update();
 
         context.save();
         context.globalAlpha = input.opacity;
@@ -586,25 +586,15 @@ export const filterNoise = {
         context.drawImage(fxCanvas, 0, 0);
         context.restore();
 
-        {
-            const layerMap = Object.fromEntries(
-                params.klCanvas.getLayers().map((layerItem) => {
-                    if (layerItem.id === params.layer.id) {
-                        return [
-                            layerItem.id,
-                            {
-                                tiles: canvasToLayerTiles(params.layer.canvas),
-                            },
-                        ];
-                    }
-
-                    return [layerItem.id, {}];
-                }),
-            );
-            klHistory.push({
-                layerMap,
-            });
-        }
+        klHistory.push(
+            getPushableLayerChange(
+                klHistory.getComposed(),
+                canvasToLayerTiles(
+                    context.canvas,
+                    selection ? integerBounds(getMultiPolyBounds(selection)) : undefined,
+                ),
+            ),
+        );
         return true;
     },
 };

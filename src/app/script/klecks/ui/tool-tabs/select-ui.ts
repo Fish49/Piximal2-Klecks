@@ -1,20 +1,22 @@
 import { BB } from '../../../bb/bb';
 import { Options } from '../components/options';
-import modeSelectImg from '/src/app/img/ui/select-mode-select.svg';
-import modeMoveImg from '/src/app/img/ui/select-mode-move.svg';
+import modeSelectImg from 'url:/src/app/img/ui/select-mode-select.svg';
+import modeMoveImg from 'url:/src/app/img/ui/select-mode-move.svg';
 import { c } from '../../../bb/base/c';
 import { TBooleanOperation, TSelectShape } from '../../select-tool/select-tool';
-import defaultImSvg from '/src/app/img/ui/select-default.svg';
-import unionImSvg from '/src/app/img/ui/select-union.svg';
-import subtractImSvg from '/src/app/img/ui/select-subtract.svg';
-import rectSvg from '/src/app/img/ui/select-shape-rect.svg';
-import ellipseSvg from '/src/app/img/ui/select-shape-ellipse.svg';
-import lassoSvg from '/src/app/img/ui/select-shape-lasso.svg';
-import polySvg from '/src/app/img/ui/select-shape-poly.svg';
-import removeLayerImg from '/src/app/img/ui/remove-layer.svg';
+import defaultImSvg from 'url:/src/app/img/ui/select-default.svg';
+import unionImSvg from 'url:/src/app/img/ui/select-union.svg';
+import subtractImSvg from 'url:/src/app/img/ui/select-subtract.svg';
+import rectSvg from 'url:/src/app/img/ui/select-shape-rect.svg';
+import ellipseSvg from 'url:/src/app/img/ui/select-shape-ellipse.svg';
+import lassoSvg from 'url:/src/app/img/ui/select-shape-lasso.svg';
+import polySvg from 'url:/src/app/img/ui/select-shape-poly.svg';
+import removeLayerImg from 'url:/src/app/img/ui/remove-layer.svg';
 import { Select } from '../components/select';
 import { LANG } from '../../../language/language';
 import { Checkbox } from '../components/checkbox';
+import { createImage } from '../../../bb/base/ui';
+import { css } from '../../../bb/base/base';
 
 export type TSelectUiParams = {
     onChangeMode: (mode: TSelectToolMode) => void;
@@ -129,8 +131,10 @@ export class SelectUi {
                 flexGrow: '1',
                 flexBasis: '0',
             },
+            css: {
+                marginBottom: '10px',
+            },
         });
-        this.modeOptions.getElement().style.marginBottom = '10px';
 
         // --- select ---
         const selectModeEl = BB.el();
@@ -167,8 +171,10 @@ export class SelectUi {
             onChange: (v) => {
                 p.onChangeBooleanOperation(v);
             },
+            css: {
+                marginBottom: '10px',
+            },
         });
-        this.operationOptions.getElement().style.marginBottom = '10px';
 
         const imStyle = {
             width: '32px',
@@ -177,19 +183,19 @@ export class SelectUi {
         const rectIm = new Image();
         rectIm.src = rectSvg;
         rectIm.classList.add('dark-invert');
-        BB.css(rectIm, imStyle);
+        css(rectIm, imStyle);
         const ellipseIm = new Image();
         ellipseIm.src = ellipseSvg;
         ellipseIm.classList.add('dark-invert');
-        BB.css(ellipseIm, imStyle);
+        css(ellipseIm, imStyle);
         const lassoIm = new Image();
         lassoIm.src = lassoSvg;
         lassoIm.classList.add('dark-invert');
-        BB.css(lassoIm, imStyle);
+        css(lassoIm, imStyle);
         const polyIm = new Image();
         polyIm.src = polySvg;
         polyIm.classList.add('dark-invert');
-        BB.css(polyIm, imStyle);
+        css(polyIm, imStyle);
 
         const shapeOptions = new Options<TSelectShape>({
             optionArr: [
@@ -218,8 +224,10 @@ export class SelectUi {
             onChange: (val) => {
                 p.select.onChangeShape(val);
             },
+            css: {
+                marginBottom: '10px',
+            },
         });
-        shapeOptions.getElement().style.marginBottom = '10px';
         selectModeEl.append(shapeOptions.getElement(), this.operationOptions.getElement());
 
         const actionRow = BB.el({
@@ -262,11 +270,18 @@ export class SelectUi {
         this.selectResetBtn = BB.el({
             parent: actionRow,
             tagName: 'button',
-            content:
-                "<img src='" +
-                removeLayerImg +
-                '\' height="20" style="margin-right: 3px; filter: invert(1)"/>' +
+            content: [
+                createImage({
+                    src: removeLayerImg,
+                    alt: 'icon',
+                    height: 20,
+                    css: {
+                        marginRight: '3px',
+                        filter: 'invert(1)',
+                    },
+                }),
                 LANG('select-reset'),
+            ],
             className: 'kl-button kl-button-primary',
             css: {
                 paddingRight: '8px',
@@ -320,13 +335,9 @@ export class SelectUi {
         // --- transform ---
         const transformModeEl = BB.el();
         const transformFlipXBtn = BB.el({
-            parent: transformModeEl,
             tagName: 'button',
             content: LANG('filter-transform-flip') + ' X',
             className: 'kl-button',
-            css: {
-                marginRight: '5px',
-            },
             onClick: () => {
                 p.transform.onFlipX();
             },
@@ -335,12 +346,8 @@ export class SelectUi {
             },
         });
         const transformFlipYBtn = BB.el({
-            parent: transformModeEl,
             tagName: 'button',
             content: LANG('filter-transform-flip') + ' Y',
-            css: {
-                marginRight: '5px',
-            },
             onClick: () => {
                 p.transform.onFlipY();
             },
@@ -349,28 +356,20 @@ export class SelectUi {
             },
         });
         const rotateNegativeBtn = BB.el({
-            parent: transformModeEl,
             tagName: 'button',
             content: '-90°',
             onClick: () => {
                 p.transform.onRotateDeg(-90);
-            },
-            css: {
-                marginRight: '5px',
             },
             custom: {
                 tabindex: '-1',
             },
         });
         const rotatePositiveBtn = BB.el({
-            parent: transformModeEl,
             tagName: 'button',
             content: '+90°',
             onClick: () => {
                 p.transform.onRotateDeg(90);
-            },
-            css: {
-                marginRight: '5px',
             },
             custom: {
                 tabindex: '-1',
@@ -378,18 +377,29 @@ export class SelectUi {
         });
 
         this.transformDuplicateBtn = BB.el({
-            parent: transformModeEl,
             tagName: 'button',
             content: LANG('select-transform-clone'),
             onClick: () => {
                 p.transform.onClone();
             },
-            css: {
-                marginTop: '10px',
-                display: 'block',
-            },
             custom: {
                 tabindex: '-1',
+            },
+        });
+
+        const actionsRow = BB.el({
+            parent: transformModeEl,
+            content: [
+                transformFlipXBtn,
+                transformFlipYBtn,
+                rotateNegativeBtn,
+                rotatePositiveBtn,
+                this.transformDuplicateBtn,
+            ],
+            css: {
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '5px',
             },
         });
 
@@ -400,6 +410,10 @@ export class SelectUi {
             ],
             onChange: (val) => {
                 p.transform.onMoveToLayer(+val);
+            },
+            name: 'move-to-layer',
+            css: {
+                width: '100%',
             },
         });
 
@@ -415,8 +429,9 @@ export class SelectUi {
             callback: (b) => {
                 p.transform.onChangeTransparentBackground(b);
             },
+            name: 'enable-transparent-background',
         });
-        BB.css(this.transparentBackgroundToggle.getElement(), {
+        css(this.transparentBackgroundToggle.getElement(), {
             marginTop: '10px',
             display: 'inline-block',
         });
@@ -433,16 +448,8 @@ export class SelectUi {
             }
         };
 
-        const wipNote = BB.el({
-            className: 'kl-toolspace-note',
-            textContent: LANG('wip'),
-            css: {
-                marginBottom: '10px',
-            },
-        });
-
         this.rootEl = BB.el({
-            content: [wipNote, this.modeOptions.getElement()],
+            content: [this.modeOptions.getElement()],
             css: {
                 margin: '10px',
             },
@@ -490,6 +497,6 @@ export class SelectUi {
     }
 
     destroy(): void {
-        // todo
+        // ...
     }
 }

@@ -1,11 +1,12 @@
 import { BB } from '../../../bb/bb';
 import { HexColorDialog } from '../modals/color-slider-hex-dialog';
 import { calcSliderFalloffFactor } from './slider-falloff';
-import eyedropperImg from '/src/app/img/ui/tool-picker.svg';
+import eyedropperImg from 'url:/src/app/img/ui/tool-picker.svg';
 import { LANG } from '../../../language/language';
-import { IRGB } from '../../kl-types';
+import { TRgb } from '../../kl-types';
 import { HSV, RGB } from '../../../bb/color/color';
 import { ERASE_COLOR } from '../../brushes/erase-color';
+import { css } from '../../../bb/base/base';
 
 /**
  * big main HS+V color slider
@@ -17,44 +18,44 @@ export class KlColorSlider {
     private readonly divPreview: HTMLElement;
     private readonly hexButton: HTMLElement;
     private readonly secondaryColorBtn: HTMLElement;
-    private primaryColorRGB: RGB;
-    private primaryColorHSV: HSV;
-    private secondaryColorRGB: RGB;
-    private secondaryColorHSV: HSV;
+    private primaryColorRgb: RGB;
+    private primaryColorHsv: HSV;
+    private secondaryColorRgb: RGB;
+    private secondaryColorHsv: HSV;
     private readonly controlH: HTMLElement;
     private readonly onEyedropper: (b: boolean) => void;
     private isPicking: boolean;
     private readonly pickerButton: HTMLElement;
     private readonly width: number;
     private readonly height: number; // hue slider and output height
-    private readonly hueStop: Element;
 
     private readonly SVContainer: HTMLElement;
     private readonly pointerSV: HTMLElement;
     private svHeight: number;
-    private readonly svSvg: HTMLElement;
+    private readonly svGradient: HTMLElement;
 
     private readonly emitColor: (rgb: RGB) => void;
 
     private updatePrimaryHSV(hsv: HSV): void {
         if (hsv.s === 0) {
-            this.primaryColorHSV = new BB.HSV(this.primaryColorHSV.h, hsv.s, hsv.v);
+            this.primaryColorHsv = new BB.HSV(this.primaryColorHsv.h, hsv.s, hsv.v);
         } else {
-            this.primaryColorHSV = new BB.HSV(hsv.h, hsv.s, hsv.v);
+            this.primaryColorHsv = new BB.HSV(hsv.h, hsv.s, hsv.v);
         }
     }
 
     private updateSVCanvas(): void {
-        const rgb = BB.ColorConverter.toRGB(new BB.HSV(this.primaryColorHSV.h, 100, 100));
-        BB.setAttributes(this.hueStop, {
-            'stop-color': '#' + BB.ColorConverter.toHexString(rgb),
-        });
+        const rgb = BB.ColorConverter.toRGB(new BB.HSV(this.primaryColorHsv.h, 100, 100));
+        this.svGradient.style.setProperty(
+            '--kl-color-picker--hue',
+            '#' + BB.ColorConverter.toHexString(rgb),
+        );
     }
 
     private updateSVPointer(): void {
-        const left = (this.primaryColorHSV.s / 100) * this.width - 7;
-        const top = (1 - this.primaryColorHSV.v / 100) * this.svHeight - 6;
-        BB.css(this.pointerSV, {
+        const left = (this.primaryColorHsv.s / 100) * this.width - 7;
+        const top = (1 - this.primaryColorHsv.v / 100) * this.svHeight - 6;
+        css(this.pointerSV, {
             left: left + 'px',
             top: top + 'px',
         });
@@ -63,25 +64,25 @@ export class KlColorSlider {
     private setColPreview(): void {
         this.divPreview.style.backgroundColor =
             'rgb(' +
-            this.primaryColorRGB.r +
+            this.primaryColorRgb.r +
             ',' +
-            this.primaryColorRGB.g +
+            this.primaryColorRgb.g +
             ',' +
-            this.primaryColorRGB.b +
+            this.primaryColorRgb.b +
             ')';
 
-        if (BB.testIsWhiteBestContrast(this.primaryColorRGB)) {
-            BB.css(this.pickerButton, {
+        if (BB.testIsWhiteBestContrast(this.primaryColorRgb)) {
+            css(this.pickerButton, {
                 filter: 'invert(1)',
             });
-            BB.css(this.hexButton, {
+            css(this.hexButton, {
                 filter: 'invert(1)',
             });
         } else {
-            BB.css(this.pickerButton, {
+            css(this.pickerButton, {
                 filter: '',
             });
-            BB.css(this.hexButton, {
+            css(this.hexButton, {
                 filter: '',
             });
         }
@@ -89,7 +90,7 @@ export class KlColorSlider {
 
     private updateSecondaryColor(): void {
         this.secondaryColorBtn.style.backgroundColor = BB.ColorConverter.toRgbStr(
-            this.secondaryColorRGB,
+            this.secondaryColorRgb,
         );
     }
 
@@ -99,8 +100,8 @@ export class KlColorSlider {
         width: number;
         height: number; // hue slider and output height
         svHeight: number;
-        startValue: IRGB; // 0-255
-        onPick: (rgb: IRGB) => void;
+        startValue: TRgb; // 0-255
+        onPick: (rgb: TRgb) => void;
         onEyedropper: (isActive: boolean) => void;
     }) {
         this.rootEl = BB.el({
@@ -121,39 +122,30 @@ export class KlColorSlider {
         this.emitColor = p.onPick;
         this.onEyedropper = p.onEyedropper;
 
-        this.primaryColorRGB = {
+        this.primaryColorRgb = {
             r: parseInt('' + p.startValue.r),
             g: parseInt('' + p.startValue.g),
             b: parseInt('' + p.startValue.b),
         };
-        this.primaryColorHSV = BB.ColorConverter.toHSV(p.startValue); // BB.HSV
-        this.secondaryColorRGB = {
+        this.primaryColorHsv = BB.ColorConverter.toHSV(p.startValue); // BB.HSV
+        this.secondaryColorRgb = {
             r: ERASE_COLOR,
             g: ERASE_COLOR,
             b: ERASE_COLOR,
         };
-        this.secondaryColorHSV = BB.ColorConverter._RGBtoHSV(this.secondaryColorRGB); // BB.HSV
+        this.secondaryColorHsv = BB.ColorConverter._RGBtoHSV(this.secondaryColorRgb); // BB.HSV
 
         const svWrapper = BB.el();
-        this.svSvg = new DOMParser().parseFromString(
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><defs><linearGradient id="value" gradientTransform="rotate(90)"><stop offset="0" stop-color="#fff"/><stop offset="100%" stop-color="#000"/></linearGradient><linearGradient id="hue" gradientTransform="rotate(0)"><stop offset="0" stop-color="#fff"/><stop id="hue-stop" offset="100%" stop-color="#f00"/></linearGradient></defs><rect x="0" y="0" width="100" height="100" fill="url(\'#hue\')"/><rect x="0" y="0" width="100" height="100" fill="url(\'#value\')" style="mix-blend-mode: multiply"/></svg>',
-            'image/svg+xml',
-        ).documentElement;
-        {
-            const hueStop = this.svSvg.querySelector('#hue-stop');
-            if (!hueStop) {
-                throw Error('#hue-stop not found in svSvg');
-            }
-            this.hueStop = hueStop;
-        }
-        BB.setAttributes(this.hueStop, {
-            'stop-color': '#f0f',
+        this.svGradient = BB.el({
+            css: {
+                background:
+                    'linear-gradient(0deg, #000 0%, rgba(255, 0, 0, 0) 100%), linear-gradient(-90deg, var(--kl-color-picker--hue) 0%, #fff 100%)',
+                width: this.width + 'px',
+                height: this.svHeight + 'px',
+            },
         });
-        BB.css(this.svSvg, {
-            width: this.width + 'px',
-            height: this.svHeight + 'px',
-        });
-        svWrapper.append(this.svSvg);
+
+        svWrapper.append(this.svGradient);
 
         const divH = BB.el({
             className: 'kl-color-picker__h',
@@ -180,7 +172,7 @@ export class KlColorSlider {
 
         const createHueBg = (targetEl: HTMLElement) => {
             const im = new Image();
-            BB.css(im, {
+            css(im, {
                 position: 'absolute',
                 left: '0',
                 top: '0',
@@ -250,14 +242,14 @@ export class KlColorSlider {
         this.outputDiv.append(this.divPreview);
 
         //divH.className = "svSlider";
-        BB.css(this.controlH, {
+        css(this.controlH, {
             width: '2px',
             height: this.height + 'px',
             background: '#000',
             borderLeft: '1px solid #fff',
             position: 'absolute',
             top: '0',
-            left: parseInt('' + ((this.primaryColorHSV.h / 360) * this.width - 1)) + 'px',
+            left: parseInt('' + ((this.primaryColorHsv.h / 360) * this.width - 1)) + 'px',
         });
 
         const virtualHSV = {
@@ -279,7 +271,7 @@ export class KlColorSlider {
             },
             onClick: () => {
                 if (this.isPicking) {
-                    this.pickingDone();
+                    this.setIsEyedropping(false);
                 } else {
                     this.pickerButton.classList.remove('color-picker-preview-button-hover');
                     this.pickerButton.classList.add('color-picker-preview-button-active');
@@ -314,9 +306,9 @@ export class KlColorSlider {
             onClick: () => {
                 new HexColorDialog({
                     color: new BB.RGB(
-                        this.primaryColorRGB.r,
-                        this.primaryColorRGB.g,
-                        this.primaryColorRGB.b,
+                        this.primaryColorRgb.r,
+                        this.primaryColorRgb.g,
+                        this.primaryColorRgb.b,
                     ),
                     onClose: (rgbObj) => {
                         if (!rgbObj) {
@@ -325,9 +317,9 @@ export class KlColorSlider {
                         this.setColor(rgbObj);
                         this.emitColor(
                             new BB.RGB(
-                                this.primaryColorRGB.r,
-                                this.primaryColorRGB.g,
-                                this.primaryColorRGB.b,
+                                this.primaryColorRgb.r,
+                                this.primaryColorRgb.g,
+                                this.primaryColorRgb.b,
                             ),
                         );
                     },
@@ -361,19 +353,19 @@ export class KlColorSlider {
                             virtualHSV.s = (event.relX / this.width) * 100;
                             virtualHSV.v = 100 - (event.relY / this.svHeight) * 100;
 
-                            this.primaryColorHSV = new BB.HSV(
-                                this.primaryColorHSV.h,
+                            this.primaryColorHsv = new BB.HSV(
+                                this.primaryColorHsv.h,
                                 virtualHSV.s,
                                 virtualHSV.v,
                             );
-                            this.primaryColorRGB = BB.ColorConverter.toRGB(this.primaryColorHSV);
+                            this.primaryColorRgb = BB.ColorConverter.toRGB(this.primaryColorHsv);
 
                             this.updateSVPointer();
                             this.setColPreview();
-                            this.emitColor(BB.ColorConverter.toRGB(this.primaryColorHSV));
+                            this.emitColor(BB.ColorConverter.toRGB(this.primaryColorHsv));
                         } else {
-                            virtualHSV.s = this.primaryColorHSV.s;
-                            virtualHSV.v = this.primaryColorHSV.v;
+                            virtualHSV.s = this.primaryColorHsv.s;
+                            virtualHSV.v = this.primaryColorHsv.v;
                         }
                     }
 
@@ -389,15 +381,15 @@ export class KlColorSlider {
                         virtualHSV.s += (event.dX / this.width) * 100 * factor;
                         virtualHSV.v -= (event.dY / this.svHeight) * 100 * factor;
 
-                        this.primaryColorHSV = new BB.HSV(
-                            this.primaryColorHSV.h,
+                        this.primaryColorHsv = new BB.HSV(
+                            this.primaryColorHsv.h,
                             virtualHSV.s,
                             virtualHSV.v,
                         );
-                        this.primaryColorRGB = BB.ColorConverter.toRGB(this.primaryColorHSV);
+                        this.primaryColorRgb = BB.ColorConverter.toRGB(this.primaryColorHsv);
                         this.updateSVPointer();
                         this.setColPreview();
-                        this.emitColor(BB.ColorConverter.toRGB(this.primaryColorHSV));
+                        this.emitColor(BB.ColorConverter.toRGB(this.primaryColorHsv));
                     }
 
                     if (event.type === 'pointerup') {
@@ -418,21 +410,21 @@ export class KlColorSlider {
                         if (event.button === 'left') {
                             virtualHSV.h = (event.relX / this.width) * 359.99;
 
-                            this.primaryColorHSV = new BB.HSV(
+                            this.primaryColorHsv = new BB.HSV(
                                 virtualHSV.h,
-                                this.primaryColorHSV.s,
-                                this.primaryColorHSV.v,
+                                this.primaryColorHsv.s,
+                                this.primaryColorHsv.v,
                             );
-                            this.primaryColorRGB = BB.ColorConverter.toRGB(this.primaryColorHSV);
+                            this.primaryColorRgb = BB.ColorConverter.toRGB(this.primaryColorHsv);
                             this.controlH.style.left =
-                                Math.round((this.primaryColorHSV.h / 359.99) * this.width) -
+                                Math.round((this.primaryColorHsv.h / 359.99) * this.width) -
                                 1 +
                                 'px';
                             this.updateSVCanvas();
                             this.setColPreview();
-                            this.emitColor(BB.ColorConverter.toRGB(this.primaryColorHSV));
+                            this.emitColor(BB.ColorConverter.toRGB(this.primaryColorHsv));
                         } else {
-                            virtualHSV.h = this.primaryColorHSV.h;
+                            virtualHSV.h = this.primaryColorHsv.h;
                         }
                     }
 
@@ -452,17 +444,17 @@ export class KlColorSlider {
                             }
                         }
                         virtualHSV.h = Math.min(359.99, virtualHSV.h);
-                        this.primaryColorHSV = new BB.HSV(
+                        this.primaryColorHsv = new BB.HSV(
                             virtualHSV.h,
-                            this.primaryColorHSV.s,
-                            this.primaryColorHSV.v,
+                            this.primaryColorHsv.s,
+                            this.primaryColorHsv.v,
                         );
-                        this.primaryColorRGB = BB.ColorConverter.toRGB(this.primaryColorHSV);
+                        this.primaryColorRgb = BB.ColorConverter.toRGB(this.primaryColorHsv);
                         this.controlH.style.left =
-                            Math.round((this.primaryColorHSV.h / 359.99) * this.width) - 1 + 'px';
+                            Math.round((this.primaryColorHsv.h / 359.99) * this.width) - 1 + 'px';
                         this.updateSVCanvas();
                         this.setColPreview();
-                        this.emitColor(BB.ColorConverter.toRGB(this.primaryColorHSV));
+                        this.emitColor(BB.ColorConverter.toRGB(this.primaryColorHsv));
                     }
 
                     if (event.type === 'pointerup') {
@@ -492,57 +484,55 @@ export class KlColorSlider {
         this.updateSecondaryColor();
     }
 
-    setColor(c: IRGB): void {
-        this.primaryColorRGB = {
+    setColor(c: TRgb): void {
+        this.primaryColorRgb = {
             r: parseInt('' + c.r),
             g: parseInt('' + c.g),
             b: parseInt('' + c.b),
         };
         this.updatePrimaryHSV(BB.ColorConverter.toHSV(c));
         this.controlH.style.left =
-            parseInt('' + ((this.primaryColorHSV.h / 359) * this.width - 1)) + 'px';
+            parseInt('' + ((this.primaryColorHsv.h / 359) * this.width - 1)) + 'px';
         this.updateSVCanvas();
         this.updateSVPointer();
         this.setColPreview();
     }
 
     getColor(): RGB {
-        return new BB.RGB(this.primaryColorRGB.r, this.primaryColorRGB.g, this.primaryColorRGB.b);
+        return new BB.RGB(this.primaryColorRgb.r, this.primaryColorRgb.g, this.primaryColorRgb.b);
     }
 
     getSecondaryRGB(): RGB {
         return new BB.RGB(
-            this.secondaryColorRGB.r,
-            this.secondaryColorRGB.g,
-            this.secondaryColorRGB.b,
+            this.secondaryColorRgb.r,
+            this.secondaryColorRgb.g,
+            this.secondaryColorRgb.b,
         );
     }
 
-    getIsPicking(): boolean {
+    getIsEyedropping(): boolean {
         return this.isPicking;
     }
 
-    pickingDone(): void {
-        if (!this.isPicking) {
-            return;
+    setIsEyedropping(b: boolean): void {
+        if (b) {
+            this.isPicking = true;
+            this.onEyedropper(true);
+            this.pickerButton.classList.add('color-picker-preview-button-active');
+        } else {
+            this.isPicking = false;
+            this.onEyedropper(false);
+            this.pickerButton.classList.remove('color-picker-preview-button-active');
         }
-        this.isPicking = false;
-        this.onEyedropper(false);
-        this.pickerButton.classList.remove('color-picker-preview-button-active');
     }
 
     enable(e: boolean): void {
-        if (e) {
-            this.rootEl.style.pointerEvents = '';
-            this.rootEl.style.opacity = '1';
-            this.outputDiv.style.pointerEvents = '';
-            this.outputDiv.style.opacity = '1';
-        } else {
-            this.rootEl.style.pointerEvents = 'none';
-            this.rootEl.style.opacity = '0.5';
-            this.outputDiv.style.pointerEvents = 'none';
-            this.outputDiv.style.opacity = '0.5';
-        }
+        const style: Partial<CSSStyleDeclaration> = {
+            pointerEvents: e ? '' : 'none',
+            opacity: e ? '1' : '0.5',
+        };
+        css(this.rootEl, style);
+        css(this.outputDiv, style);
     }
 
     setHeight(h: number): void {
@@ -551,7 +541,7 @@ export class KlColorSlider {
             return;
         }
         this.svHeight = h;
-        BB.css(this.svSvg, {
+        css(this.svGradient, {
             width: this.width + 'px',
             height: this.svHeight + 'px',
         });
@@ -561,23 +551,23 @@ export class KlColorSlider {
 
     swapColors(): void {
         // swap hsv
-        let tmp: RGB | HSV = this.secondaryColorHSV;
-        this.secondaryColorHSV = this.primaryColorHSV;
+        let tmp: RGB | HSV = this.secondaryColorHsv;
+        this.secondaryColorHsv = this.primaryColorHsv;
         this.updatePrimaryHSV(tmp);
         // swap rgb
-        tmp = this.secondaryColorRGB;
-        this.secondaryColorRGB = this.primaryColorRGB;
-        this.primaryColorRGB = tmp;
+        tmp = this.secondaryColorRgb;
+        this.secondaryColorRgb = this.primaryColorRgb;
+        this.primaryColorRgb = tmp;
 
         this.controlH.style.left =
-            parseInt('' + ((this.primaryColorHSV.h / 359) * this.width - 1)) + 'px';
+            parseInt('' + ((this.primaryColorHsv.h / 359) * this.width - 1)) + 'px';
         this.updateSVCanvas();
         this.updateSVPointer();
         this.setColPreview();
         this.updateSecondaryColor();
 
         this.emitColor(
-            new BB.RGB(this.primaryColorRGB.r, this.primaryColorRGB.g, this.primaryColorRGB.b),
+            new BB.RGB(this.primaryColorRgb.r, this.primaryColorRgb.g, this.primaryColorRgb.b),
         );
     }
 

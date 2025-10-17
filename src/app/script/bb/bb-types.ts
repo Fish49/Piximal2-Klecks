@@ -1,26 +1,26 @@
-export interface IVector2D {
+export type TVector2D = {
     x: number;
     y: number;
-}
+};
 
-export interface IPressureInput {
+export type TPressureInput = {
     x: number;
     y: number;
     pressure: number; // 0-1
-}
+};
 
-export interface ISize2D {
+export type TSize2D = {
     width: number;
     height: number;
-}
+};
 
-export interface IKeyString {
+export type TKeyString = {
     [key: string]: string;
-}
+};
 
-export interface ISVG {
+export type TSvg = {
     elementType: string;
-    childrenArr?: ISVG[];
+    childrenArr?: TSvg[];
     viewBox?: string;
     preserveAspectRatio?: string;
     id?: string;
@@ -29,7 +29,7 @@ export interface ISVG {
     height?: string;
     fill?: string;
     stroke?: string;
-    style?: string;
+    css?: Partial<CSSStyleDeclaration>;
     d?: string;
     x?: string;
     y?: string;
@@ -63,26 +63,26 @@ export interface ISVG {
     'transform-origin'?: string;
     opacity?: string;
     // add more when needed
-}
+};
 
 // x1 <= x2, y1 <= y2
-export interface IBounds {
+export type TBounds = {
     x1: number;
     y1: number;
     x2: number;
     y2: number;
-}
+};
 
-export interface IRect {
+export type TRect = {
     x: number;
     y: number;
     width: number;
     height: number;
-}
+};
 
-export interface ICropRect {
+export type TCropRect = {
     left: number;
     right: number;
     top: number;
     bottom: number;
-}
+};

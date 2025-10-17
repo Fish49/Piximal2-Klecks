@@ -1,28 +1,27 @@
 import { BB } from '../../bb/bb';
 import { floodFillBits } from '../image-operations/flood-fill';
 import { drawShape } from '../image-operations/shape-tool';
-import { TRenderTextParam, renderText } from '../image-operations/render-text';
+import { renderText, TRenderTextParam } from '../image-operations/render-text';
 import {
-    IGradient,
-    IKlProject,
-    IRGB,
-    IShapeToolObject,
     isLayerFill,
     TFillSampling,
+    TGradient,
+    TKlProject,
     TLayerFromKlCanvas,
     TMixMode,
+    TRgb,
+    TShapeToolObject,
 } from '../kl-types';
 import { drawProject } from './draw-project';
 import { LANG } from '../../language/language';
 import { drawGradient } from '../image-operations/gradient-tool';
-import { IBounds, IRect } from '../../bb/bb-types';
+import { TBounds, TRect } from '../../bb/bb-types';
 import { MultiPolygon } from 'polygon-clipping';
-import { compose, identity, Matrix, translate, rotate } from 'transformation-matrix';
+import { compose, identity, Matrix, rotate, scale, translate } from 'transformation-matrix';
 import { getSelectionPath2d } from '../../bb/multi-polygon/get-selection-path-2d';
 import { transformMultiPolygon } from '../../bb/multi-polygon/transform-multi-polygon';
 import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bounds';
-import { intBoundsWithinArea, integerBounds } from '../../bb/math/math';
-import { canvasBounds } from '../../bb/base/canvas';
+import { integerBounds } from '../../bb/math/math';
 import { matrixToTuple } from '../../bb/math/matrix-to-tuple';
 import { getEraseColor } from '../brushes/erase-color';
 import { HISTORY_TILE_SIZE, KlHistory } from '../history/kl-history';
@@ -40,7 +39,11 @@ import { transformBounds } from '../../bb/transform/transform-bounds';
 import { getSelectionSampleBounds } from './get-selection-sample-bounds';
 import { createLayerMap } from '../history/push-helpers/create-layer-map';
 import { Eyedropper } from './eyedropper';
-import { copyImageData } from '../utils/copy-image-data';
+import { copyImageDataTile } from '../history/image-data-tile';
+import { randomUuid } from '../../bb/base/base';
+import { getSelectionBounds } from '../select-tool/get-selection-bounds';
+import { translateMultiPolygon } from '../../bb/multi-polygon/translate-multi-polygon';
+import { getBinaryMask } from '../select-tool/get-binary-mask';
 
 // TODO remove in 2026
 // workaround for chrome bug https://bugs.chromium.org/p/chromium/issues/detail?id=1281185
@@ -227,6 +230,7 @@ export class KlCanvas {
         this.height = 0;
         this.updateViaComposed(
             {
+                projectId: { value: randomUuid() },
                 size: { width: 0, height: 0 },
                 activeLayerId: '',
                 selection: { value: [] },
@@ -242,9 +246,10 @@ export class KlCanvas {
      * @param p
      */
     reset(p: {
+        projectId?: string; // uuid
         width: number;
         height: number;
-        color?: IRGB; // optional - fill color
+        color?: TRgb; // optional - fill color
         image?: HTMLImageElement | HTMLCanvasElement; // image drawn on layer
         layerName?: string; // if via image
         layers?: {
@@ -312,6 +317,9 @@ export class KlCanvas {
 
         if (!this.klHistory.isPaused()) {
             const historyEntryData: THistoryEntryDataComposed = {
+                projectId: {
+                    value: p.projectId ?? randomUuid(),
+                },
                 size: {
                     width: this.width,
                     height: this.height,
@@ -343,7 +351,7 @@ export class KlCanvas {
     /**
      * without resizing
      */
-    setSize(width: number, height: number) {
+    setSize(width: number, height: number): void {
         this.width = width;
         this.height = height;
     }
@@ -393,6 +401,12 @@ export class KlCanvas {
             throw new Error('unknown resize algorithm');
         }
 
+        if (this.selection) {
+            this.selection = transformMultiPolygon(
+                this.selection,
+                scale(w / this.width, h / this.height),
+            );
+        }
         this.width = w;
         this.height = h;
 
@@ -402,6 +416,7 @@ export class KlCanvas {
                 height: this.height,
             },
             layerMap: createLayerMap(this.layers, { attributes: ['tiles'] }),
+            ...(this.selection ? { selection: { value: this.selection } } : {}),
         });
 
         return true;
@@ -409,14 +424,13 @@ export class KlCanvas {
 
     /**
      * crop / extend
-     * @param p
      */
     resizeCanvas(p: {
         left: number;
         top: number;
         right: number;
         bottom: number;
-        fillColor?: IRGB;
+        fillColor?: TRgb;
     }): void {
         const newW = Math.round(p.left) + this.width + Math.round(p.right);
         const newH = Math.round(p.top) + this.height + Math.round(p.bottom);
@@ -447,12 +461,16 @@ export class KlCanvas {
         this.width = newW;
         this.height = newH;
 
+        if (this.selection) {
+            this.selection = translateMultiPolygon(this.selection, offX, offY);
+        }
         this.klHistory.push({
             size: {
                 width: this.width,
                 height: this.height,
             },
             layerMap: createLayerMap(this.layers, { attributes: ['tiles'] }),
+            ...(this.selection ? { selection: { value: this.selection } } : {}),
         });
     }
 
@@ -568,7 +586,7 @@ export class KlCanvas {
                         HISTORY_TILE_SIZE,
                     );
                 } else {
-                    ctx.putImageData(tile, x * HISTORY_TILE_SIZE, y * HISTORY_TILE_SIZE);
+                    ctx.putImageData(tile.data, x * HISTORY_TILE_SIZE, y * HISTORY_TILE_SIZE);
                 }
                 ctx.restore();
             });
@@ -589,7 +607,7 @@ export class KlCanvas {
                             if (isLayerFill(tile)) {
                                 return { ...tile };
                             }
-                            return copyImageData(tile);
+                            return copyImageDataTile(tile);
                         }),
                     },
                 ),
@@ -825,46 +843,48 @@ export class KlCanvas {
         return 0;
     }
 
+    // rotates the canvas with all layers. either by 90, 180, or 270 degrees
     rotate(deg: number): void {
         while (deg < 0) {
             deg += 360;
         }
         deg %= 360;
-        if (deg % 90 != 0 || deg === 0) {
+        if (deg !== 90 && deg !== 180 && deg !== 270) {
             return;
         }
         const temp = BB.canvas();
-        if (deg === 0 || deg === 180) {
+        if (deg === 180) {
             temp.width = this.width;
             temp.height = this.height;
         } else if (deg === 90 || deg === 270) {
             temp.width = this.height;
             temp.height = this.width;
         }
+        let matrix: Matrix = identity();
+        if (deg === 90) {
+            matrix = compose(translate(this.height, 0), rotate(Math.PI / 2));
+        } else if (deg === 180) {
+            matrix = compose(translate(this.width, this.height), rotate(Math.PI));
+        } else if (deg === 270) {
+            matrix = compose(translate(0, this.width), rotate((3 * Math.PI) / 2));
+        }
         const ctx = BB.ctx(temp);
         for (let i = 0; i < this.layers.length; i++) {
             ctx.clearRect(0, 0, temp.width, temp.height);
             ctx.save();
-            ctx.translate(temp.width / 2, temp.height / 2);
-            ctx.rotate((deg * Math.PI) / 180);
-            if (deg === 180) {
-                ctx.drawImage(this.layers[i].canvas, -temp.width / 2, -temp.height / 2);
-            } else if (deg === 90 || deg === 270) {
-                ctx.drawImage(this.layers[i].canvas, -temp.height / 2, -temp.width / 2);
-            }
+            ctx.setTransform(...matrixToTuple(matrix));
+            ctx.drawImage(this.layers[i].canvas, 0, 0);
+            ctx.restore();
             this.layers[i].canvas.width = temp.width;
             this.layers[i].canvas.height = temp.height;
-            this.layers[i].context.clearRect(
-                0,
-                0,
-                this.layers[i].canvas.width,
-                this.layers[i].canvas.height,
-            );
             this.layers[i].context.drawImage(temp, 0, 0);
-            ctx.restore();
         }
         this.width = temp.width;
         this.height = temp.height;
+
+        if (this.selection) {
+            this.selection = transformMultiPolygon(this.selection, matrix);
+        }
 
         this.klHistory.push({
             size: {
@@ -872,6 +892,7 @@ export class KlCanvas {
                 height: this.height,
             },
             layerMap: createLayerMap(this.layers, { attributes: ['tiles'] }),
+            ...(this.selection ? { selection: { value: this.selection } } : {}),
         });
     }
 
@@ -885,6 +906,12 @@ export class KlCanvas {
         temp.height = this.height;
         const tempCtx = BB.ctx(temp);
 
+        const matrix = compose(
+            translate(temp.width / 2, temp.height / 2),
+            scale(isHorizontal ? -1 : 1, isVertical ? -1 : 1),
+            translate(-temp.width / 2, -temp.height / 2),
+        );
+
         for (let i = 0; i < this.layers.length; i++) {
             if ((layerIndex || layerIndex === 0) && i !== layerIndex) {
                 continue;
@@ -892,9 +919,8 @@ export class KlCanvas {
 
             tempCtx.save();
             tempCtx.clearRect(0, 0, temp.width, temp.height);
-            tempCtx.translate(temp.width / 2, temp.height / 2);
-            tempCtx.scale(isHorizontal ? -1 : 1, isVertical ? -1 : 1);
-            tempCtx.drawImage(this.layers[i].canvas, -temp.width / 2, -temp.height / 2);
+            tempCtx.setTransform(...matrixToTuple(matrix));
+            tempCtx.drawImage(this.layers[i].canvas, 0, 0);
             tempCtx.restore();
 
             this.layers[i].context.clearRect(
@@ -906,6 +932,10 @@ export class KlCanvas {
             this.layers[i].context.drawImage(temp, 0, 0);
         }
 
+        if (this.selection) {
+            this.selection = transformMultiPolygon(this.selection, matrix);
+        }
+
         const targetLayer = layerIndex === undefined ? undefined : this.layers[layerIndex];
         this.klHistory.push({
             layerMap: createLayerMap(
@@ -914,12 +944,30 @@ export class KlCanvas {
                     ? { layerId: targetLayer.id, attributes: ['tiles'] }
                     : { attributes: ['tiles'] },
             ),
+            ...(this.selection ? { selection: { value: this.selection } } : {}),
         });
+    }
+
+    // arbitrary drawing operation & focus layer
+    drawOperation(layerIndex: number, operation: (ctx: CanvasRenderingContext2D) => void): void {
+        const targetLayer = this.layers[layerIndex];
+        const ctx = targetLayer.context;
+        operation(ctx);
+
+        if (!this.klHistory.isPaused()) {
+            this.klHistory.push({
+                activeLayerId: targetLayer.id,
+                layerMap: createLayerMap(this.layers, {
+                    layerId: targetLayer.id,
+                    attributes: ['tiles'],
+                }),
+            });
+        }
     }
 
     layerFill(
         layerIndex: number,
-        colorObj: IRGB,
+        colorObj: TRgb,
         compositeOperation?: string,
         doClipSelection?: boolean,
     ): void {
@@ -931,7 +979,7 @@ export class KlCanvas {
             ctx.globalCompositeOperation = compositeOperation as GlobalCompositeOperation;
         }
 
-        let bounds: IBounds | undefined;
+        let bounds: TBounds | undefined;
         if (doClipSelection && this.selection) {
             const selectionPath = getSelectionPath2d(this.selection);
             ctx.clip(selectionPath);
@@ -1004,7 +1052,7 @@ export class KlCanvas {
         layerIndex: number, // index of layer to be filled
         x: number, // starting point
         y: number,
-        rgb: IRGB | null, // fill color, if null -> erase
+        rgb: TRgb | null, // fill color, if null -> erase
         opacity: number,
         tolerance: number,
         sampleStr: TFillSampling,
@@ -1015,9 +1063,18 @@ export class KlCanvas {
             return;
         }
         tolerance = Math.round(tolerance);
+        x = Math.round(x);
+        y = Math.round(y);
 
         if (!['above', 'current', 'all'].includes(sampleStr)) {
             throw new Error('invalid sampleStr');
+        }
+        const selectionMask = this.selection
+            ? getBinaryMask(this.selection, this.width, this.height)
+            : undefined;
+        if (selectionMask && selectionMask[y * this.width + x] === 0) {
+            // don't fill if outside of selection
+            return;
         }
 
         const targetLayer = this.layers[layerIndex];
@@ -1033,6 +1090,7 @@ export class KlCanvas {
             const srcData = srcImageData.data;
             result = floodFillBits(
                 srcData,
+                selectionMask,
                 this.width,
                 this.height,
                 x,
@@ -1056,6 +1114,7 @@ export class KlCanvas {
             const srcData = srcImageData.data;
             result = floodFillBits(
                 srcData,
+                selectionMask,
                 this.width,
                 this.height,
                 x,
@@ -1138,12 +1197,15 @@ export class KlCanvas {
      * @param layerIndex
      * @param shapeObj
      */
-    drawShape(layerIndex: number, shapeObj: IShapeToolObject): void {
+    drawShape(layerIndex: number, shapeObj: TShapeToolObject): void {
         if (shapeObj.x1 === shapeObj.x2 && shapeObj.y1 === shapeObj.y2) {
             return;
         }
         const targetLayer = this.layers[layerIndex];
-        const bounds = integerBounds(drawShape(targetLayer.context, shapeObj));
+        const selectionPath = this.selection
+            ? new Path2D(getSelectionPath2d(this.selection))
+            : undefined;
+        const bounds = integerBounds(drawShape(targetLayer.context, shapeObj, selectionPath));
 
         // debug
         /*const ctx = this.layers[layerIndex].context;
@@ -1163,9 +1225,12 @@ export class KlCanvas {
         }
     }
 
-    drawGradient(layerIndex: number, gradientObj: IGradient): void {
+    drawGradient(layerIndex: number, gradientObj: TGradient): void {
         const targetLayer = this.layers[layerIndex];
-        drawGradient(targetLayer.context, gradientObj);
+        const selectionPath = this.selection
+            ? new Path2D(getSelectionPath2d(this.selection))
+            : undefined;
+        drawGradient(targetLayer.context, gradientObj, selectionPath);
         if (!this.klHistory.isPaused()) {
             this.klHistory.push({
                 layerMap: createLayerMap(this.layers, {
@@ -1178,7 +1243,11 @@ export class KlCanvas {
 
     text(layerIndex: number, p: TRenderTextParam): void {
         const targetLayer = this.layers[layerIndex];
-        const rect = renderText(targetLayer.canvas, BB.copyObj(p));
+        const rect = renderText(
+            targetLayer.canvas,
+            BB.copyObj(p),
+            this.selection ? new Path2D(getSelectionPath2d(this.selection)) : undefined,
+        );
 
         // add 2, because rect not entirely accurate
         const padding = 2 + (p.stroke ? p.stroke.lineWidth / 2 : 0);
@@ -1223,7 +1292,7 @@ export class KlCanvas {
         const targetLayer = this.layers[p.layerIndex];
         const ctx = targetLayer.context;
         ctx.save();
-        let bounds: IBounds | undefined;
+        let bounds: TBounds | undefined;
         if (p.useSelection && this.selection) {
             const selectionPath = getSelectionPath2d(this.selection);
             ctx.clip(selectionPath);
@@ -1329,16 +1398,17 @@ export class KlCanvas {
         return this.layers[index];
     }
 
-    getColorAt(x: number, y: number): IRGB {
+    getColorAt(x: number, y: number): TRgb {
         return this.eyedropper.getColorAt(x, y, this.klHistory.getComposed());
     }
 
-    getCompleteCanvas(factor: number): HTMLCanvasElement {
-        return drawProject(this.getProject(), factor);
+    getCompleteCanvas(factor: number, maskSelection?: boolean): HTMLCanvasElement {
+        return drawProject(this.getProject(), factor, maskSelection ? this.selection : undefined);
     }
 
-    getProject(): IKlProject {
+    getProject(): TKlProject {
         return {
+            projectId: this.klHistory.getComposed().projectId.value,
             width: this.width,
             height: this.height,
             layers: this.layers.map((layer) => {
@@ -1543,21 +1613,10 @@ export class KlCanvas {
         this.selectionSample = undefined;
     }
 
-    getSelectionArea(layerIndex: number): IRect | undefined {
+    getSelectionArea(layerIndex: number): TRect | undefined {
         const srcLayer = this.layers[layerIndex];
-
         const selection = this.getSelectionOrFallback();
-        const selectionBounds = getMultiPolyBounds(selection);
-        // integer bounds that are within the canvas
-        const canvasSelectionBounds = intBoundsWithinArea(selectionBounds, this.width, this.height);
-
-        // selection area outside of canvas
-        if (!canvasSelectionBounds) {
-            return undefined;
-        }
-
-        // bounds of where pixels are non-transparent
-        return canvasBounds(srcLayer.context, canvasSelectionBounds);
+        return getSelectionBounds(selection, srcLayer.context);
     }
 
     getSelectionSample(): TSelectionSample | undefined {

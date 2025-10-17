@@ -17,6 +17,7 @@ import { distort } from './filters/distort';
 import { multiplyAlpha } from './filters/multiply-alpha';
 import { TFxCanvas, TFxGl, TFxSupportedElements, TWrappedTexture } from './fx-canvas-types';
 import { BB } from '../bb/bb';
+import { mask } from './filters/mask';
 
 /*
  * based on glfx.js
@@ -222,6 +223,7 @@ void main() {
 
         // Core methods
         canvas.texture = wrap(texture);
+        canvas.initialize = wrap(initialize);
         canvas.draw = wrap(draw);
         canvas.update = wrap(update);
         canvas.contents = wrap(contents);
@@ -242,6 +244,7 @@ void main() {
         canvas.unmultiplyAlpha = wrap(unmultiplyAlpha);
         canvas.toAlpha = wrap(toAlpha);
         canvas.distort = wrap(distort);
+        canvas.mask = wrap(mask);
 
         return canvas as TFxCanvas;
     };

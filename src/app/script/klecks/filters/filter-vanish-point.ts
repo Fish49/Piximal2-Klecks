@@ -1,12 +1,12 @@
 import { BB } from '../../bb/bb';
-import { IFilterApply, IFilterGetDialogParam, TFilterGetDialogResult, IRGB } from '../kl-types';
+import { TFilterApply, TFilterGetDialogParam, TFilterGetDialogResult, TRgb } from '../kl-types';
 import { LANG } from '../../language/language';
 import { input } from '../ui/components/input';
 import { ColorOptions } from '../ui/components/color-options';
 import { drawVanishPoint } from '../image-operations/draw-vanish-point';
 import { KlSlider } from '../ui/components/kl-slider';
 import { EVENT_RES_MS } from './filters-consts';
-import { throwIfNull } from '../../bb/base/base';
+import { css, throwIfNull } from '../../bb/base/base';
 import { Preview } from '../ui/project-viewport/preview';
 import { TProjectViewportProject } from '../ui/project-viewport/project-viewport';
 import { DraggableInput } from '../ui/components/draggable-input';
@@ -19,12 +19,12 @@ export type TFilterVanishPointInput = {
     y: number;
     lines: number;
     thickness: number;
-    color: IRGB;
+    color: TRgb;
     opacity: number;
 };
 
 export const filterVanishPoint = {
-    getDialog(params: IFilterGetDialogParam) {
+    getDialog(params: TFilterGetDialogParam) {
         const context = params.context;
         const klCanvas = params.klCanvas;
         if (!context || !klCanvas) {
@@ -226,7 +226,7 @@ export const filterVanishPoint = {
                 layers: previewLayerArr,
             },
         });
-        BB.css(preview.getElement(), {
+        css(preview.getElement(), {
             marginLeft: '-20px',
             marginRight: '-20px',
             overflow: 'hidden',
@@ -262,7 +262,7 @@ export const filterVanishPoint = {
         return result;
     },
 
-    apply(params: IFilterApply<TFilterVanishPointInput>): boolean {
+    apply(params: TFilterApply<TFilterVanishPointInput>): boolean {
         const context = params.layer.context;
         const klCanvas = params.klCanvas;
         const klHistory = params.klHistory;

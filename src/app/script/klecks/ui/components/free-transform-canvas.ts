@@ -1,11 +1,11 @@
 import { BB } from '../../../bb/bb';
 import { FreeTransform } from './free-transform';
-import { IKlBasicLayer } from '../../kl-types';
-import { IRect } from '../../../bb/bb-types';
+import { TKlBasicLayer } from '../../kl-types';
+import { TRect } from '../../../bb/bb-types';
 import { Preview } from '../project-viewport/preview';
 import { TProjectViewportProject } from '../project-viewport/project-viewport';
-import { css } from '@emotion/css/dist/emotion-css.cjs';
-import { IFreeTransform } from './free-transform-utils';
+import { TFreeTransform } from './free-transform-utils';
+import { css } from '../../../bb/base/base';
 
 /**
  * a basic canvas where you can transform one layer(move around, rotate, scale)
@@ -13,14 +13,15 @@ import { IFreeTransform } from './free-transform-utils';
 export class FreeTransformCanvas {
     private readonly rootEl: HTMLElement;
     private readonly freeTransform: FreeTransform;
-    private readonly layers: IKlBasicLayer[];
+    private readonly layers: TKlBasicLayer[];
     private readonly transformIndex: number;
     private readonly imageWidth: number;
     private readonly imageHeight: number;
-    private readonly initTransform: IRect;
+    private readonly initTransform: TRect;
     private readonly previewLayerArr: TProjectViewportProject['layers'];
     private readonly preview: Preview;
     private readonly previewCanvas: HTMLCanvasElement;
+    private algorithm: 'pixelated' | 'smooth' = 'smooth';
 
     private updatePreview(): void {
         const transform = this.freeTransform.getValue();
@@ -33,11 +34,12 @@ export class FreeTransformCanvas {
             this.layers[this.transformIndex].image,
             transform,
             undefined,
-            BB.testShouldPixelate(
-                transform,
-                transform.width / this.initTransform.width,
-                transform.height / this.initTransform.height,
-            ),
+            this.algorithm === 'pixelated' ||
+                BB.testShouldPixelate(
+                    transform,
+                    transform.width / this.initTransform.width,
+                    transform.height / this.initTransform.height,
+                ),
         );
         ctx.restore();
         this.preview.render();
@@ -49,7 +51,7 @@ export class FreeTransformCanvas {
         elementHeight: number;
         imageWidth: number;
         imageHeight: number;
-        layers: IKlBasicLayer[];
+        layers: TKlBasicLayer[];
         transformIndex: number;
     }) {
         this.imageWidth = p.imageWidth;
@@ -90,21 +92,21 @@ export class FreeTransformCanvas {
             },
             hasEditMode: true,
             onModeChange: (m) => {
-                this.freeTransform.getElement().style.pointerEvents = m === 'edit' ? '' : 'none';
-                this.freeTransform.getElement().style.opacity = m === 'edit' ? '' : '0.5';
+                css(this.freeTransform.getElement(), {
+                    pointerEvents: m === 'edit' ? '' : 'none',
+                    opacity: m === 'edit' ? '' : '0.5',
+                });
             },
             onTransformChange: (transform) => {
                 this.freeTransform.setViewportTransform(transform);
             },
             padding: 30,
         });
-        this.preview.getElement().classList.add(
-            css({
-                overflow: 'hidden',
-                marginLeft: '-20px',
-                marginRight: '-20px',
-            }),
-        );
+        css(this.preview.getElement(), {
+            overflow: 'hidden',
+            marginLeft: '-20px',
+            marginRight: '-20px',
+        });
         this.rootEl.append(this.preview.getElement());
 
         {
@@ -130,7 +132,7 @@ export class FreeTransformCanvas {
             });
             this.preview.getElement().append(this.freeTransform.getElement());
         }
-        BB.css(this.freeTransform.getElement(), {
+        css(this.freeTransform.getElement(), {
             position: 'absolute',
             left: '0',
             top: '0',
@@ -177,19 +179,27 @@ export class FreeTransformCanvas {
         this.updatePreview();
     }
 
+    setAlgorithm(algo: 'pixelated' | 'smooth'): void {
+        this.algorithm = algo;
+        this.updatePreview();
+    }
+
     /**
      * gives you the transformation in the original scale
      */
-    getTransformation(): IFreeTransform {
+    getTransformation(): TFreeTransform {
         return this.freeTransform.getValue();
     }
 
     getIsPixelated(): boolean {
         const transform = this.freeTransform.getValue();
-        return BB.testShouldPixelate(
-            transform,
-            transform.width / this.initTransform.width,
-            transform.height / this.initTransform.height,
+        return (
+            this.algorithm === 'pixelated' ||
+            BB.testShouldPixelate(
+                transform,
+                transform.width / this.initTransform.width,
+                transform.height / this.initTransform.height,
+            )
         );
     }
 

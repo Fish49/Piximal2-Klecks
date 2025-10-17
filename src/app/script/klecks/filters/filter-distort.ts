@@ -1,20 +1,19 @@
 import { BB } from '../../bb/bb';
-import { IFilterApply, IFilterGetDialogParam, TFilterGetDialogResult } from '../kl-types';
+import { TFilterApply, TFilterGetDialogParam, TFilterGetDialogResult } from '../kl-types';
 import { KlSlider } from '../ui/components/kl-slider';
 import { LANG } from '../../language/language';
 import { EVENT_RES_MS } from './filters-consts';
 import { getSharedFx } from '../../fx-canvas/shared-fx';
 import { Options } from '../ui/components/options';
 import { Checkbox } from '../ui/components/checkbox';
-import { throwIfNull } from '../../bb/base/base';
+import { css, throwIfNull } from '../../bb/base/base';
 import { TFilterDistortSettings } from '../../fx-canvas/filters/distort';
 import { FxPreviewRenderer } from '../ui/project-viewport/fx-preview-renderer';
 import { TProjectViewportProject } from '../ui/project-viewport/project-viewport';
 import { Preview } from '../ui/project-viewport/preview';
-import { css } from '@emotion/css/dist/emotion-css.cjs';
 import { testIsSmall } from '../ui/utils/test-is-small';
 import { getPreviewHeight, getPreviewWidth, MEDIUM_PREVIEW } from '../ui/utils/preview-size';
-import { canvasToLayerTiles } from '../history/push-helpers/canvas-to-layer-tiles';
+import { applyFxFilter } from './apply-fx-filter';
 
 // see fx-canvas distort
 export type TFilterDistortInput = {
@@ -27,7 +26,7 @@ export type TFilterDistortInput = {
 };
 
 export const filterDistort = {
-    getDialog(params: IFilterGetDialogParam) {
+    getDialog(params: TFilterGetDialogParam) {
         const isSmall = testIsSmall();
         const rootEl = BB.el();
         const context = params.context;
@@ -110,7 +109,7 @@ export const filterDistort = {
 
         const typeOptions = new Options({
             optionArr: thumbImgArr.map((img, index) => {
-                BB.css(img, {
+                css(img, {
                     margin: '1px',
                     borderRadius: '3px',
                     transition: 'all 0.1s ease-in-out',
@@ -157,6 +156,7 @@ export const filterDistort = {
                     sync('x');
                 }
             },
+            name: 'sync-xy',
         });
 
         topRowEl.append(
@@ -296,6 +296,7 @@ export const filterDistort = {
 
                 return fxCanvas.multiplyAlpha().distort(scaledSettings).unmultiplyAlpha();
             },
+            selection: klCanvas.getSelection(),
         });
 
         const previewLayerArr: TProjectViewportProject['layers'] = layers.map((item, i) => {
@@ -315,14 +316,13 @@ export const filterDistort = {
                 height: context.canvas.height,
                 layers: previewLayerArr,
             },
+            selection: klCanvas.getSelection(),
         });
         preview.render();
-        preview.getElement().classList.add(
-            css({
-                marginLeft: '-20px',
-                marginRight: '-20px',
-            }),
-        );
+        css(preview.getElement(), {
+            marginLeft: '-20px',
+            marginRight: '-20px',
+        });
         rootEl.append(preview.getElement());
 
         const destroy = () => {
@@ -349,42 +349,20 @@ export const filterDistort = {
         return result;
     },
 
-    apply(params: IFilterApply<TFilterDistortInput>): boolean {
+    apply(params: TFilterApply<TFilterDistortInput>): boolean {
         const klCanvas = params.klCanvas;
         const context = params.layer.context;
         const klHistory = params.klHistory;
         if (!klCanvas) {
             return false;
         }
-        const fxCanvas = getSharedFx();
-        if (!fxCanvas) {
-            return false; // todo more specific error?
-        }
-        const texture = fxCanvas.texture(context.canvas);
-        fxCanvas.draw(texture).multiplyAlpha().distort(params.input).unmultiplyAlpha().update();
-        context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-        context.drawImage(fxCanvas, 0, 0);
-        texture.destroy();
-
-        {
-            const layerMap = Object.fromEntries(
-                params.klCanvas.getLayers().map((layerItem) => {
-                    if (layerItem.id === params.layer.id) {
-                        return [
-                            layerItem.id,
-                            {
-                                tiles: canvasToLayerTiles(params.layer.canvas),
-                            },
-                        ];
-                    }
-
-                    return [layerItem.id, {}];
-                }),
-            );
-            klHistory.push({
-                layerMap,
-            });
-        }
-        return true;
+        return applyFxFilter(
+            context,
+            params.klCanvas.getSelection(),
+            (fxCanvas) => {
+                fxCanvas.multiplyAlpha().distort(params.input).unmultiplyAlpha();
+            },
+            klHistory,
+        );
     },
 };

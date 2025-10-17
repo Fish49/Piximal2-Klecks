@@ -1,9 +1,9 @@
 import { BB } from '../../../bb/bb';
 import { LANG } from '../../../language/language';
 import { TUiLayout } from '../../kl-types';
-import { ISize2D } from '../../../bb/bb-types';
-import { theme } from '../../../theme/theme';
-import { throwIfNull } from '../../../bb/base/base';
+import { TSize2D } from '../../../bb/bb-types';
+import { THEME } from '../../../theme/theme';
+import { css, throwIfNull } from '../../../bb/base/base';
 import { TKlCanvasLayer } from '../../canvas/kl-canvas';
 import { KlHistory } from '../../history/kl-history';
 
@@ -29,7 +29,7 @@ export class LayerPreview {
 
     private readonly nameLabelEl: HTMLElement;
     private readonly opacityEl: HTMLElement;
-    private lastDrawnSize: ISize2D;
+    private lastDrawnSize: TSize2D;
     private lastDrawnState: number; // from KlHistory
 
     private readonly canvasSize: number;
@@ -51,7 +51,7 @@ export class LayerPreview {
     private largeCanvasCheckerPattern: CanvasPattern = {} as CanvasPattern;
 
     private updateCheckerPatterns(): void {
-        const checker = BB.createCheckerCanvas(4, theme.isDark());
+        const checker = BB.createCheckerCanvas(4, THEME.isDark());
         this.animationCanvasCheckerPattern = throwIfNull(
             this.animationCanvasCtx.createPattern(checker, 'repeat'),
         );
@@ -118,7 +118,7 @@ export class LayerPreview {
         this.largeCanvasCtx.restore();
 
         const bounds = this.rootEl.getBoundingClientRect();
-        BB.css(this.largeCanvasWrapper, {
+        css(this.largeCanvasWrapper, {
             top: Math.max(10, bounds.top + this.height / 2 - this.largeCanvas.height / 2) + 'px',
         });
     }
@@ -271,6 +271,7 @@ export class LayerPreview {
             custom: {
                 type: 'checkbox',
                 disabled: 'true',
+                name: 'layer-visible',
             },
         });
 
@@ -347,7 +348,7 @@ export class LayerPreview {
         this.largeCanvas = BB.canvas(this.largeCanvasSize, this.largeCanvasSize);
         this.largeCanvasWrapper.append(this.largeCanvas);
         this.largeCanvasCtx = BB.ctx(this.largeCanvas);
-        BB.css(this.largeCanvas, {
+        css(this.largeCanvas, {
             display: 'block',
         });
 
@@ -357,7 +358,7 @@ export class LayerPreview {
         this.rootEl.append(this.contentWrapperEl);
 
         this.updateCheckerPatterns();
-        theme.addIsDarkListener(() => {
+        THEME.addIsDarkListener(() => {
             this.updateCheckerPatterns();
             this.draw(true);
         });
@@ -453,12 +454,12 @@ export class LayerPreview {
         this.uiState = stateStr;
 
         if (this.uiState === 'left') {
-            BB.css(this.largeCanvasWrapper, {
+            css(this.largeCanvasWrapper, {
                 left: '280px',
                 right: '',
             });
         } else {
-            BB.css(this.largeCanvasWrapper, {
+            css(this.largeCanvasWrapper, {
                 left: '',
                 right: '280px',
             });

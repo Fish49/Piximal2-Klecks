@@ -1,13 +1,14 @@
 import { TViewportTransform } from '../project-viewport/project-viewport';
 import { BB } from '../../../bb/bb';
-import { IVector2D } from '../../../bb/bb-types';
+import { TVector2D } from '../../../bb/bb-types';
 import { applyToPoint } from 'transformation-matrix';
 import { createMatrixFromTransform } from '../../../bb/transform/create-matrix-from-transform';
 import { PointerListener } from '../../../bb/input/pointer-listener';
+import { css } from '../../../bb/base/base';
 
 export type TDraggableInputParams = {
-    value: IVector2D;
-    onChange: (value: IVector2D) => void;
+    value: TVector2D;
+    onChange: (value: TVector2D) => void;
 };
 
 const SIZE = 16;
@@ -15,12 +16,12 @@ const SIZE = 16;
 export class DraggableInput {
     private readonly rootEl: HTMLElement;
     private transform: TViewportTransform;
-    private value: IVector2D;
+    private value: TVector2D;
     private readonly pointerListener: PointerListener;
 
     private update(): void {
         const p = applyToPoint(createMatrixFromTransform(this.transform), this.value);
-        BB.css(this.rootEl, {
+        css(this.rootEl, {
             left: p.x - SIZE / 2 + 'px',
             top: p.y - SIZE / 2 + 'px',
         });
@@ -72,11 +73,11 @@ export class DraggableInput {
         this.update();
     }
 
-    getValue(): IVector2D {
+    getValue(): TVector2D {
         return this.value;
     }
 
-    setValue(p: IVector2D): void {
+    setValue(p: TVector2D): void {
         this.value = { ...p };
         this.update();
     }

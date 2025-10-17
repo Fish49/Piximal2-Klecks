@@ -3,8 +3,9 @@ import { KlColorSliderSmall } from './kl-color-slider-small';
 import { KlSlider } from './kl-slider';
 import { BrushSettingService, TBrushSettingEmit } from '../../brushes-ui/brush-setting-service';
 import { LANG } from '../../../language/language';
-import { IRGB } from '../../kl-types';
-import { IVector2D } from '../../../bb/bb-types';
+import { TRgb } from '../../kl-types';
+import { TVector2D } from '../../../bb/bb-types';
+import { css } from '../../../bb/base/base';
 
 /**
  * Compressed HUD toolspace. When you hold ctrl+alt.
@@ -30,7 +31,7 @@ export class OverlayToolspace {
             className: 'kl-overlay-toolspace',
         });
         const queuedObj: {
-            color: IRGB | null;
+            color: TRgb | null;
             size: number | null;
             opacity: number | null;
         } = {
@@ -51,7 +52,7 @@ export class OverlayToolspace {
             heightSV: sizeObj.svHeight,
             heightH: sizeObj.hHeight,
             color: p.brushSettingService.getColor(),
-            callback: (rgbObj: IRGB) => {
+            callback: (rgbObj: TRgb) => {
                 selectedColorEl.style.backgroundColor =
                     'rgb(' + rgbObj.r + ',' + rgbObj.g + ',' + rgbObj.b + ')';
                 p.brushSettingService.setColor(rgbObj, subscriptionFunc);
@@ -72,7 +73,7 @@ export class OverlayToolspace {
 
         colorEl.append(selectedColorEl, colorSlider.getElement());
 
-        const updateColor = (rgbObj: IRGB) => {
+        const updateColor = (rgbObj: TRgb) => {
             colorSlider.setColor(rgbObj);
             selectedColorEl.style.backgroundColor =
                 'rgb(' + rgbObj.r + ',' + rgbObj.g + ',' + rgbObj.b + ')';
@@ -102,7 +103,7 @@ export class OverlayToolspace {
                 }
             },
         });
-        BB.css(sizeSlider.getElement(), {
+        css(sizeSlider.getElement(), {
             marginTop: '2px',
         });
 
@@ -121,7 +122,7 @@ export class OverlayToolspace {
                 p.brushSettingService.setOpacity(v);
             },
         });
-        BB.css(opacitySlider.getElement(), {
+        css(opacitySlider.getElement(), {
             margin: '2px 0',
         });
         this.rootEl.append(sizeSlider.getElement(), opacitySlider.getElement());
@@ -170,7 +171,7 @@ export class OverlayToolspace {
 
             this.rootEl.style.display = isVisible ? 'block' : 'none';
             if (isVisible && mousePos) {
-                BB.css(this.rootEl, {
+                css(this.rootEl, {
                     left: mousePos.x - Math.round(sizeObj.width / 2) + 'px',
                     top:
                         mousePos.y -
@@ -180,7 +181,7 @@ export class OverlayToolspace {
             }
         };
 
-        let mousePos: IVector2D | null = null;
+        let mousePos: TVector2D | null = null;
         document.addEventListener(
             'pointermove',
             (event) => {

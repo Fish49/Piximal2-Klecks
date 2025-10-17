@@ -1,6 +1,5 @@
 import { BB } from '../../bb/bb';
-import { IFilterApply, IFilterGetDialogParam, TFilterGetDialogResult } from '../kl-types';
-import { theme } from '../../theme/theme';
+import { TFilterApply, TFilterGetDialogParam, TFilterGetDialogResult } from '../kl-types';
 import { SMALL_PREVIEW } from '../ui/utils/preview-size';
 
 export type TFilterRotateInput = {
@@ -8,7 +7,7 @@ export type TFilterRotateInput = {
 };
 
 export const filterRotate = {
-    getDialog(params: IFilterGetDialogParam) {
+    getDialog(params: TFilterGetDialogParam) {
         const klCanvas = params.klCanvas;
         if (!klCanvas) {
             return false;
@@ -39,22 +38,47 @@ export const filterRotate = {
             }
         }
 
-        const btnPlus = document.createElement('button');
-        btnPlus.innerHTML = "<span style='font-size: 1.3em'>⟳</span> 90°";
-        const btnMinus = document.createElement('button');
-        btnMinus.innerHTML = "<span style='font-size: 1.3em'>⟲</span> 90°";
-        btnMinus.style.marginRight = '5px';
+        const minusBtn = BB.el({
+            tagName: 'button',
+            content: [
+                BB.el({
+                    tagName: 'span',
+                    content: '⟲',
+                    css: {
+                        fontSize: '1.3em',
+                    },
+                }),
+                ' 90°',
+            ],
+            onClick: () => {
+                deg -= 90;
+                update();
+            },
+            noRef: true,
+        });
+        const plusBtn = BB.el({
+            tagName: 'button',
+            content: [
+                BB.el({
+                    tagName: 'span',
+                    content: '⟳',
+                    css: {
+                        fontSize: '1.3em',
+                    },
+                }),
+                ' 90°',
+            ],
+            onClick: () => {
+                deg += 90;
+                update();
+            },
+            noRef: true,
+            css: {
+                marginLeft: '5px',
+            },
+        });
 
-        btnPlus.onclick = function () {
-            deg += 90;
-            update();
-        };
-        btnMinus.onclick = function () {
-            deg -= 90;
-            update();
-        };
-
-        rootEl.append(btnMinus, btnPlus);
+        rootEl.append(minusBtn, plusBtn);
 
         const previewWrapper = BB.el({
             className: 'kl-preview-wrapper',
@@ -82,29 +106,17 @@ export const filterRotate = {
                 marginLeft: 'auto',
                 marginRight: 'auto',
                 overflow: 'hidden',
+                background: 'var(--kl-checkerboard-background)',
+                backgroundSize: '16px',
             },
         });
 
-        function updateCheckerboard(): void {
-            BB.createCheckerDataUrl(
-                8,
-                function (url) {
-                    canvasWrapper.style.background = 'url(' + url + ')';
-                },
-                theme.isDark(),
-            );
-        }
-        theme.addIsDarkListener(updateCheckerboard);
-        updateCheckerboard();
-
-        canvasWrapper.style.transition = 'all 0.2s ease-out';
+        canvasWrapper.style.transition = 'transform 0.2s ease-out';
 
         rootEl.append(previewWrapper);
         update();
 
-        result.destroy = (): void => {
-            theme.removeIsDarkListener(updateCheckerboard);
-        };
+        result.destroy = (): void => {};
         result.getInput = function (): TFilterRotateInput {
             result.destroy!();
             return {
@@ -114,7 +126,7 @@ export const filterRotate = {
         return result;
     },
 
-    apply(params: IFilterApply<TFilterRotateInput>): boolean {
+    apply(params: TFilterApply<TFilterRotateInput>): boolean {
         const klCanvas = params.klCanvas;
         if (!klCanvas) {
             return false;

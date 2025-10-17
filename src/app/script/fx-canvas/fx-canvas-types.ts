@@ -14,6 +14,7 @@ import { TFilterTriangleBlur } from './filters/triangle-blur';
 import { TFilterUnsharpMask } from './filters/unsharp-mask';
 import { FxTexture } from './core/fx-texture';
 import { FxShader } from './core/fx-shader';
+import { TFilterMask } from './filters/mask';
 
 export type TVec3 = [number, number, number];
 export type TMat2x2 = [number, number, number, number];
@@ -40,6 +41,7 @@ export type TFxFilters = {
     toAlpha: TFilterToAlpha;
     triangleBlur: TFilterTriangleBlur;
     unsharpMask: TFilterUnsharpMask;
+    mask: TFilterMask;
 };
 
 type TFxShaders = Record<keyof Pick<TFxFilters, keyof TFxFilters>, FxShader | undefined>;
@@ -92,6 +94,11 @@ export type TFxCanvas = HTMLCanvasElement &
          * element - The HTML element to store in the texture, either an <img>, a <canvas>, or a <video>.
          */
         texture: (element: TFxSupportedElements) => TWrappedTexture;
+
+        /**
+         * Sets size of canvas. Resets internal state.
+         */
+        initialize: (width: number, height: number) => void;
 
         /**
          * This replaces the internal contents of the canvas with the image stored in texture. All filter operations take

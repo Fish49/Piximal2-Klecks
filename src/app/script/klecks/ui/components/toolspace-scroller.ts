@@ -1,6 +1,7 @@
 import { BB } from '../../../bb/bb';
 import { LANG } from '../../../language/language';
-import { dialogCounter } from '../modals/modal-count';
+import { DIALOG_COUNTER } from '../modals/modal-count';
+import { css } from '../../../bb/base/base';
 
 /**
  * Scroll buttons at the top and bottom of toolspace
@@ -121,7 +122,7 @@ export class ToolspaceScroller {
         window.addEventListener('resize', () => this.update());
 
         // hide if in dialog because that can have its own scrollbar
-        dialogCounter.subscribe((v) => {
+        DIALOG_COUNTER.subscribe((v) => {
             // ignores the 0.5 by tool dropdown
             this.upBtn.style.opacity = v >= 1 ? '0' : '';
             this.downBtn.style.opacity = v >= 1 ? '0' : '';
@@ -129,11 +130,11 @@ export class ToolspaceScroller {
     }
 
     updateUiState(uiState: 'left' | 'right'): void {
-        BB.css(this.upBtn, {
+        css(this.upBtn, {
             left: uiState === 'left' ? '0' : '',
             right: uiState === 'right' ? '0' : '',
         });
-        BB.css(this.downBtn, {
+        css(this.downBtn, {
             left: uiState === 'left' ? '0' : '',
             right: uiState === 'right' ? '0' : '',
         });

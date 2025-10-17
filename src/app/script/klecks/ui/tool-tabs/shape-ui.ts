@@ -5,6 +5,7 @@ import { KlSlider } from '../components/kl-slider';
 import { LANG } from '../../../language/language';
 import { TShapeToolMode, TShapeToolType } from '../../kl-types';
 import { KlColorSlider } from '../components/kl-color-slider';
+import { css } from '../../../bb/base/base';
 
 /**
  * Shape Tool tab contents
@@ -62,7 +63,7 @@ export class ShapeUi {
         });
         rectStrokeSvg.classList.add('dark-invert');
         rectStrokeSvg.append(rectStrokeSvgRect);
-        BB.css(rectStrokeSvg, {
+        css(rectStrokeSvg, {
             display: 'block',
         });
 
@@ -78,7 +79,7 @@ export class ShapeUi {
         });
         rectFilledSvg.classList.add('dark-invert');
         rectFilledSvg.append(rectFilledSvgRect);
-        BB.css(rectFilledSvg, {
+        css(rectFilledSvg, {
             display: 'block',
         });
 
@@ -95,7 +96,7 @@ export class ShapeUi {
         });
         ellipseStrokeSvg.classList.add('dark-invert');
         ellipseStrokeSvg.append(ellipseStrokeSvgEllipse);
-        BB.css(ellipseStrokeSvg, {
+        css(ellipseStrokeSvg, {
             display: 'block',
         });
 
@@ -112,7 +113,7 @@ export class ShapeUi {
         });
         ellipseFilledSvg.classList.add('dark-invert');
         ellipseFilledSvg.append(ellipseFilledSvgEllipse);
-        BB.css(ellipseFilledSvg, {
+        css(ellipseFilledSvg, {
             display: 'block',
         });
 
@@ -128,7 +129,7 @@ export class ShapeUi {
         });
         lineSvg.classList.add('dark-invert');
         lineSvg.append(lineSvgLine);
-        BB.css(lineSvg, {
+        css(lineSvg, {
             display: 'block',
         });
 
@@ -138,21 +139,21 @@ export class ShapeUi {
 
             const squish = 1.35;
 
-            BB.css(rectStrokeSvgRect, {
+            css(rectStrokeSvgRect, {
                 fill: 'none',
                 stroke: 'black',
                 strokeWidth: strokeWidth,
             });
-            BB.css(rectFilledSvgRect, { fill: 'black', stroke: 'none' });
+            css(rectFilledSvgRect, { fill: 'black', stroke: 'none' });
 
-            BB.css(ellipseStrokeSvgEllipse, {
+            css(ellipseStrokeSvgEllipse, {
                 fill: 'none',
                 stroke: 'black',
                 strokeWidth: strokeWidth,
             });
-            BB.css(ellipseFilledSvgEllipse, { fill: 'black', stroke: 'none' });
+            css(ellipseFilledSvgEllipse, { fill: 'black', stroke: 'none' });
 
-            BB.css(lineSvgLine, {
+            css(lineSvgLine, {
                 fill: 'none',
                 stroke: 'black',
                 strokeWidth: strokeWidth,
@@ -240,19 +241,21 @@ export class ShapeUi {
                 this.shape = split[0] as TShapeToolType;
                 this.mode = split[1] as TShapeToolMode;
 
-                BB.css(this.fixedToggle.getElement(), {
+                css(this.fixedToggle.getElement(), {
                     display: this.shape === 'line' ? 'none' : '',
                 });
-                BB.css(this.snapToggle.getElement(), {
+                css(this.snapToggle.getElement(), {
                     display: this.shape === 'line' ? '' : 'none',
                 });
-                BB.css(this.lineWidthSlider.getElement(), {
+                css(this.lineWidthSlider.getElement(), {
                     display: this.shape !== 'line' && this.mode === 'fill' ? 'none' : '',
                 });
             },
             changeOnInit: true,
+            css: {
+                width: '120px',
+            },
         });
-        shapeOptions.getElement().style.width = '120px';
         row1.append(shapeOptions.getElement());
 
         this.eraserToggle = new Checkbox({
@@ -261,6 +264,7 @@ export class ShapeUi {
             callback: () => {
                 updatePreviews();
             },
+            name: 'enable-eraser',
         });
 
         this.lockAlphaToggle = new Checkbox({
@@ -268,6 +272,7 @@ export class ShapeUi {
             label: LANG('lock-alpha'),
             title: LANG('lock-alpha-title'),
             doHighlight: true,
+            name: 'enable-alpha-lock',
         });
         this.lockAlphaToggle.getElement().style.marginTop = '10px';
 
@@ -276,6 +281,7 @@ export class ShapeUi {
             label: LANG('shape-auto-pan'),
             title: LANG('shape-auto-pan-title'),
             callback: (b) => p.onChangePanning(b),
+            name: 'enable-auto-pan',
         });
         this.panningToggle.getElement().style.marginTop = '10px';
 
@@ -301,7 +307,7 @@ export class ShapeUi {
                 updatePreviews();
             },
         });
-        BB.css(this.lineWidthSlider.getElement(), {
+        css(this.lineWidthSlider.getElement(), {
             marginTop: '10px',
         });
         this.rootEl.append(this.lineWidthSlider.getElement());
@@ -316,7 +322,7 @@ export class ShapeUi {
             toValue: (displayValue) => displayValue / 100,
             toDisplayValue: (value) => value * 100,
         });
-        BB.css(this.opacitySlider.getElement(), {
+        css(this.opacitySlider.getElement(), {
             marginTop: '10px',
         });
         this.rootEl.append(this.opacitySlider.getElement());
@@ -327,16 +333,14 @@ export class ShapeUi {
                 display: 'flex',
                 alignItems: 'center',
                 marginTop: '10px',
+                gap: '10px',
             },
         });
 
         this.outwardsToggle = new Checkbox({
             init: false,
             label: LANG('shape-outwards'),
-            css: {
-                width: '50%',
-                marginRight: '10px',
-            },
+            name: 'enable-outwards',
         });
         row2.append(this.outwardsToggle.getElement());
 
@@ -346,9 +350,7 @@ export class ShapeUi {
             callback: () => {
                 updatePreviews();
             },
-            css: {
-                flexGrow: '1',
-            },
+            name: 'enable-fixed-proportions',
         });
         row2.append(this.fixedToggle.getElement());
 
@@ -359,9 +361,7 @@ export class ShapeUi {
             callback: () => {
                 updatePreviews();
             },
-            css: {
-                flexGrow: '1',
-            },
+            name: 'enable-angle-snapping',
         });
         row2.append(this.snapToggle.getElement());
 

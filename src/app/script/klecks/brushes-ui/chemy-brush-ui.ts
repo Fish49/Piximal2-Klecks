@@ -3,12 +3,13 @@ import { EVENT_RES_MS } from './brushes-consts';
 import { Checkbox } from '../ui/components/checkbox';
 import { BRUSHES } from '../brushes/brushes';
 import { KlSlider } from '../ui/components/kl-slider';
-import brushIconImg from '/src/app/img/ui/brush-chemy.svg';
-import { IBrushUi } from '../kl-types';
+import brushIconImg from 'url:/src/app/img/ui/brush-chemy.svg';
+import { TBrushUi } from '../kl-types';
 import { Options } from '../ui/components/options';
 import { BoxToggle } from '../ui/components/box-toggle';
-import { LANG, languageStrings } from '../../language/language';
+import { LANG, LANGUAGE_STRINGS } from '../../language/language';
 import { ChemyBrush } from '../brushes/chemy-brush';
+import { css } from '../../bb/base/base';
 
 export const chemyBrushUi = (function () {
     const brushInterface = {
@@ -24,9 +25,9 @@ export const chemyBrushUi = (function () {
             min: 1 / 100,
             max: 1,
         },
-    } as IBrushUi<ChemyBrush>;
+    } as TBrushUi<ChemyBrush>;
 
-    languageStrings.subscribe(() => {
+    LANGUAGE_STRINGS.subscribe(() => {
         brushInterface.tooltip = LANG('brush-chemy');
     });
 
@@ -87,7 +88,7 @@ export const chemyBrushUi = (function () {
                 },
             });
 
-            BB.css(opacitySlider.getElement(), {
+            css(opacitySlider.getElement(), {
                 marginTop: '10px',
             });
 
@@ -101,6 +102,7 @@ export const chemyBrushUi = (function () {
                     marginTop: '10px',
                     marginLeft: '10px',
                 },
+                name: 'eraser-toggle',
             });
 
             const lockAlphaToggle = new Checkbox({
@@ -114,6 +116,7 @@ export const chemyBrushUi = (function () {
                 css: {
                     marginTop: '10px',
                 },
+                name: 'lock-alpha-toggle',
             });
 
             const toggleRow = BB.el({
@@ -141,7 +144,10 @@ export const chemyBrushUi = (function () {
                                 {
                                     elementType: 'path',
                                     fill: '#000',
-                                    style: `transform-origin: 0 0; transform: translate(-0.5px, -0.5px) scale(${actualIconSize}, ${actualIconSize}) translate(0.5px, 0.5px)`,
+                                    css: {
+                                        transformOrigin: '0 0',
+                                        transform: `translate(-0.5px, -0.5px) scale(${actualIconSize}, ${actualIconSize}) translate(0.5px, 0.5px)`,
+                                    },
                                     d: 'M 0,0 C 1.5,0 -0.5,1 1,1',
                                 },
                             ],
@@ -160,7 +166,11 @@ export const chemyBrushUi = (function () {
                                     elementType: 'path',
                                     fill: 'none',
                                     stroke: '#000',
-                                    style: `stroke-width: 0.12px; transform-origin: 0 0; transform: translate(-0.5px, -0.5px) scale(${actualIconSize}, ${actualIconSize}) translate(0.5px, 0.5px)`,
+                                    css: {
+                                        strokeWidth: '0.12px',
+                                        transformOrigin: '0 0',
+                                        transform: `translate(-0.5px, -0.5px) scale(${actualIconSize}, ${actualIconSize}) translate(0.5px, 0.5px)`,
+                                    },
                                     d: 'M 0,0 C 1.5,0 -0.5,1 1,1',
                                 },
                             ],
@@ -192,7 +202,9 @@ export const chemyBrushUi = (function () {
                             elementType: 'path',
                             fill: 'none',
                             stroke: '#000',
-                            style: 'stroke-width: 1px',
+                            css: {
+                                strokeWidth: '1px',
+                            },
                             d: `M ${halfSize + padding},${padding} ${halfSize + padding},${actualIconSize + padding}`,
                         },
                     ],
@@ -215,7 +227,9 @@ export const chemyBrushUi = (function () {
                             elementType: 'path',
                             fill: 'none',
                             stroke: '#000',
-                            style: 'stroke-width: 1px',
+                            css: {
+                                strokeWidth: '1px',
+                            },
                             d: `M ${padding},${halfSize + padding} ${actualIconSize + padding},${halfSize + padding}`,
                         },
                     ],
@@ -276,15 +290,15 @@ export const chemyBrushUi = (function () {
                 },
             });
 
-            BB.css(mirrorXToggle.getElement(), {
+            css(mirrorXToggle.getElement(), {
                 marginLeft: '10px',
             });
             {
                 const margin = {
                     marginLeft: '4px',
                 };
-                BB.css(mirrorYToggle.getElement(), margin);
-                BB.css(gradientToggle.getElement(), margin);
+                css(mirrorYToggle.getElement(), margin);
+                css(gradientToggle.getElement(), margin);
             }
 
             toggleRow.append(
@@ -363,7 +377,7 @@ export const chemyBrushUi = (function () {
         this.getElement = function () {
             return div;
         };
-    } as IBrushUi<ChemyBrush>['Ui'];
+    } as TBrushUi<ChemyBrush>['Ui'];
 
     return brushInterface;
 })();

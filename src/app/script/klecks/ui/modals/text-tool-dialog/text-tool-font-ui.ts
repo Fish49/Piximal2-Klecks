@@ -3,16 +3,17 @@ import { TRenderTextParam, TTextFormat } from '../../../image-operations/render-
 import { Input } from '../../components/input';
 import { LANG } from '../../../../language/language';
 import { ImageRadioList } from '../../components/image-radio-list';
-import alignLeftImg from '/src/app/img/ui/align-left.svg';
-import alignCenterImg from '/src/app/img/ui/align-center.svg';
-import alignRightImg from '/src/app/img/ui/align-right.svg';
-import typoItalicImg from '/src/app/img/ui/typo-italic.svg';
-import typoBoldImg from '/src/app/img/ui/typo-bold.svg';
+import alignLeftImg from 'url:/src/app/img/ui/align-left.svg';
+import alignCenterImg from 'url:/src/app/img/ui/align-center.svg';
+import alignRightImg from 'url:/src/app/img/ui/align-right.svg';
+import typoItalicImg from 'url:/src/app/img/ui/typo-italic.svg';
+import typoBoldImg from 'url:/src/app/img/ui/typo-bold.svg';
 import { ImageToggle } from '../../components/image-toggle';
 import { Select } from '../../components/select';
 import { c } from '../../../../bb/base/c';
 import { PointerListener } from '../../../../bb/input/pointer-listener';
 import { FONTS } from '../../../../../fonts/fonts';
+import { showModal } from '../base/showModal';
 
 type TFontParams = Pick<
     TRenderTextParam,
@@ -87,10 +88,11 @@ export class TextToolFontUI {
     }
 
     private importFont(): void {
+        const acceptedExtensions = ['ttf', 'otf', 'woff', 'woff2', 'eot'];
         const input = document.createElement('input');
         input.type = 'file';
         input.multiple = true;
-        input.accept = '.ttf, .otf, .woff, .woff2, .eot';
+        input.accept = acceptedExtensions.map((item) => '.' + item).join(', ');
         input.focus();
         input.click();
         input.onchange = async () => {
@@ -98,10 +100,13 @@ export class TextToolFontUI {
                 return;
             }
             let toSelect: string | undefined = undefined;
+            const failedToLoadFilenames: string[] = [];
+            let acceptedAtLeastOne = false;
 
             const fontFamilies = importedFonts.map((i) => i.fontFamily);
             for (let i = 0; i < input.files.length; i++) {
                 const file = input.files[i];
+
                 const fontName = 'kl-' + importedFonts.length;
                 if (fontFamilies.includes(fontName)) {
                     continue;
@@ -120,7 +125,38 @@ export class TextToolFontUI {
                     fontName: split.join('.'),
                 });
                 const font = new FontFace(fontName, await file.arrayBuffer());
-                document.fonts.add(font);
+                try {
+                    await font.load();
+                    document.fonts.add(font);
+                    acceptedAtLeastOne = true;
+                } catch (err) {
+                    failedToLoadFilenames.push(file.name);
+                }
+            }
+
+            if (failedToLoadFilenames.length > 0) {
+                showModal({
+                    target: document.body,
+                    message: BB.el({
+                        content: [
+                            LANG('text-failed-import'),
+                            c('br'),
+                            failedToLoadFilenames.join(', '),
+                            c('br'),
+                            c('br'),
+                            LANG('text-supported-formats'),
+                            c('br'),
+                            acceptedExtensions.join(', '),
+                        ],
+                    }),
+                    type: 'error',
+                });
+            }
+
+            if (!acceptedAtLeastOne) {
+                this.importButton.disabled = false;
+                this.importButton.innerText = LANG('file-import');
+                return;
             }
 
             // update font selection
@@ -177,6 +213,7 @@ export class TextToolFontUI {
                     font: v,
                 });
             },
+            name: 'font',
         });
         this.onFocus = () => this.loadBundledFonts();
         this.fontSelect.getElement().addEventListener('focus', this.onFocus);
@@ -194,7 +231,16 @@ export class TextToolFontUI {
         });
 
         const sizeLabel = BB.el({
-            content: '<div><span style="font-size: 0.6em; margin-right: -1px">A</span>A</div>',
+            content: [
+                BB.el({
+                    tagName: 'span',
+                    content: 'A',
+                    css: {
+                        fontSize: '0.6em',
+                    },
+                }),
+                'A',
+            ],
             css: {
                 width: '25px',
                 height: '25px',
@@ -221,6 +267,7 @@ export class TextToolFontUI {
             css: {
                 width: '70px',
             },
+            name: 'font-size',
         });
 
         this.lineHeightInput = new Input({
@@ -240,6 +287,7 @@ export class TextToolFontUI {
             css: {
                 width: '60px',
             },
+            name: 'line-height',
         });
 
         this.letterSpacingInput = new Input({
@@ -258,6 +306,7 @@ export class TextToolFontUI {
             css: {
                 width: '60px',
             },
+            name: 'letter-spacing',
         });
 
         this.alignRadioList = new ImageRadioList<TTextFormat>({

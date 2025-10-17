@@ -1,12 +1,13 @@
 import { BB } from '../../../bb/bb';
 import { calcSliderFalloffFactor } from './slider-falloff';
-import { IKlSliderConfig } from '../../kl-types';
-import { languageStrings } from '../../../language/language';
+import { TKlSliderConfig } from '../../kl-types';
+import { LANGUAGE_STRINGS } from '../../../language/language';
 import { KlSliderManualInput } from './kl-slider-manual-input';
 import { SplineInterpolator } from '../../../bb/math/line';
 import { PointerListener } from '../../../bb/input/pointer-listener';
-import { IPointerEvent } from '../../../bb/input/event.types';
-import { IChainElement } from '../../../bb/input/event-chain/event-chain.types';
+import { TPointerEvent } from '../../../bb/input/event.types';
+import { TChainElement } from '../../../bb/input/event-chain/event-chain.types';
+import { css } from '../../../bb/base/base';
 
 /**
  * Horizontal slider, can be changed by dragging anywhere on it. Has a label & value.
@@ -54,6 +55,7 @@ export class KlSlider {
     private readonly rootEl: HTMLElement;
     private readonly sliderWrapperEl: HTMLElement;
     private readonly textEl: HTMLElement; // displays label, displayValue
+    private readonly labelValueEl: HTMLElement;
     private readonly label: string;
     private readonly control: HTMLElement;
     private manualInput: undefined | KlSliderManualInput;
@@ -84,14 +86,9 @@ export class KlSlider {
     private updateLabel(): void {
         let displayValue: number | string = this.valueToDisplayValue(this.value);
         displayValue = this.formatFunc ? this.formatFunc(displayValue) : Math.round(displayValue);
-        displayValue = displayValue.toLocaleString(languageStrings.getCode());
+        displayValue = displayValue.toLocaleString(LANGUAGE_STRINGS.getCode());
         const unit = this.unit !== undefined ? this.unit : '';
-        this.textEl.innerHTML =
-            this.label +
-            '&nbsp;&nbsp;<span style="font-weight:bold">' +
-            displayValue +
-            unit +
-            '</span>';
+        this.labelValueEl.textContent = displayValue + unit;
 
         const sliderValue = this.valueToSliderValue(this.value);
         this.control.style.width = sliderValue * this.elementWidth + 'px';
@@ -130,7 +127,7 @@ export class KlSlider {
 
     private updateEnable(): void {
         this.sliderWrapperEl.classList.toggle('slider-wrapper--disabled', !this.isEnabled);
-        BB.css(this.sliderWrapperEl, {
+        css(this.sliderWrapperEl, {
             opacity: this.isEnabled ? '' : '0.5',
             pointerEvents: this.isEnabled ? '' : 'none',
         });
@@ -151,7 +148,7 @@ export class KlSlider {
                 this.onChange(this.value);
             },
             () => {
-                BB.css(this.sliderWrapperEl, {
+                css(this.sliderWrapperEl, {
                     display: '',
                 });
                 if (this.manualInput) {
@@ -169,7 +166,7 @@ export class KlSlider {
         setTimeout(() => {
             this.manualInput && this.manualInput.focus();
         });
-        BB.css(this.sliderWrapperEl, {
+        css(this.sliderWrapperEl, {
             display: 'none',
         });
     }
@@ -259,16 +256,30 @@ export class KlSlider {
         };
         this.label = p.label;
         const labelFontSize = this.elementHeight - 14;
+        this.labelValueEl = BB.el({
+            css: { fontWeight: 'bold' },
+        });
         this.textEl = BB.el({
-            content: this.label,
+            content: [
+                BB.el({
+                    content: this.label,
+                    css: {
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                    },
+                }),
+                this.labelValueEl,
+            ],
             css: {
                 position: 'absolute',
                 display: 'flex',
                 alignItems: 'center',
-                marginLeft: '7px',
+                padding: '0 7px',
                 height: '100%',
+                width: '100%',
                 fontSize: labelFontSize + 'px',
                 pointerEvents: 'none',
+                gap: '8px',
             },
         });
         this.control = BB.el({
@@ -295,11 +306,11 @@ export class KlSlider {
         });
         doubleTapper.setAllowedButtonArr(['left', 'right']);
         const eventChain = new BB.EventChain({
-            chainArr: [doubleTapper as IChainElement],
+            chainArr: [doubleTapper as TChainElement],
         });
 
         let virtualVal: number;
-        const onPointer = (event: IPointerEvent) => {
+        const onPointer = (event: TPointerEvent) => {
             event.eventPreventDefault();
 
             if (!this.isEnabled) {
@@ -387,7 +398,7 @@ export class KlSlider {
         return this.valueToDisplayValue(this.value);
     }
 
-    update(config: IKlSliderConfig): void {
+    update(config: TKlSliderConfig): void {
         this.min = config.min;
         this.max = config.max;
         this.useSpline = !!config.curve;

@@ -1,10 +1,10 @@
-type FilePickerAcceptType = {
+type TFilePickerAcceptType = {
     description?: string;
     accept: Record<string, string[]>;
 };
 
 type TMimeType = string;
-const types: Record<TMimeType, FilePickerAcceptType> = {
+const types: Record<TMimeType, TFilePickerAcceptType> = {
     'image/png': {
         description: 'PNG Image',
         accept: { 'image/png': ['.png'] },
@@ -67,5 +67,9 @@ export async function saveAs(
     a.href = objectUrl;
 
     setTimeout(() => URL.revokeObjectURL(objectUrl), 40 /* sec */ * 1000);
-    setTimeout(() => a.click(), 1);
+    setTimeout(() => {
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }, 1);
 }

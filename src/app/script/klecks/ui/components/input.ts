@@ -1,6 +1,7 @@
 import { BB } from '../../../bb/bb';
-import { IKeyString } from '../../../bb/bb-types';
+import { TKeyString } from '../../../bb/bb-types';
 import { KeyListener } from '../../../bb/input/key-listener';
+import { css } from '../../../bb/base/base';
 
 type TInputType = 'button' | 'checkbox' | 'number' | 'text' | 'color';
 
@@ -9,6 +10,7 @@ export type TInputParams = {
     init: string | number;
     title?: string;
     label?: string | HTMLElement;
+    name: string;
 
     // for type: number
     min?: number;
@@ -20,7 +22,7 @@ export type TInputParams = {
     doScrollWithoutFocus?: boolean; // default: false
     doResetIfInvalid?: boolean; // default: false
 
-    css?: IKeyString;
+    css?: TKeyString;
 };
 
 export class Input {
@@ -48,9 +50,10 @@ export class Input {
             tagName: 'input',
             parent: this.rootEl,
             title: p.title,
+            custom: {
+                name: p.name,
+            },
         });
-
-        this.input.type;
 
         this.type = p.type ?? 'text';
         try {
@@ -114,7 +117,7 @@ export class Input {
             };
         }
         if (p.css) {
-            BB.css(this.input, p.css);
+            css(this.input, p.css);
         }
 
         if (p.doScrollWithoutFocus && p.type === 'number' && p.onChange) {
@@ -160,7 +163,7 @@ export const input = function (params: {
     max?: number;
     callback: (val: string) => void;
     init: string | number;
-    css?: IKeyString;
+    css?: TKeyString;
 }) {
     const result = document.createElement('input');
     if (params.type) {
@@ -186,7 +189,7 @@ export const input = function (params: {
         };
     }
     if (params.css) {
-        BB.css(result, params.css);
+        css(result, params.css);
     }
 
     return result;

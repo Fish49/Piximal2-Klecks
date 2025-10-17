@@ -1,12 +1,11 @@
 import { BB } from '../../bb/bb';
-import { IFilterApply, IFilterGetDialogParam, TFilterGetDialogResult } from '../kl-types';
+import { TFilterApply, TFilterGetDialogParam, TFilterGetDialogResult } from '../kl-types';
 import { LANG } from '../../language/language';
 import { input } from '../ui/components/input';
 import { ColorOptions } from '../ui/components/color-options';
 import { drawGrid } from '../image-operations/draw-grid';
-import { throwIfNull } from '../../bb/base/base';
+import { css, throwIfNull } from '../../bb/base/base';
 import { Preview } from '../ui/project-viewport/preview';
-import { css } from '@emotion/css/dist/emotion-css.cjs';
 import { testIsSmall } from '../ui/utils/test-is-small';
 import { getPreviewHeight, getPreviewWidth } from '../ui/utils/preview-size';
 import { canvasToLayerTiles } from '../history/push-helpers/canvas-to-layer-tiles';
@@ -20,7 +19,7 @@ export type TFilterGridInput = {
 };
 
 export const filterGrid = {
-    getDialog(params: IFilterGetDialogParam) {
+    getDialog(params: TFilterGetDialogParam) {
         const context = params.context;
         const klCanvas = params.klCanvas;
         if (!context || !klCanvas) {
@@ -161,13 +160,10 @@ export const filterGrid = {
                 layers: previewLayerArr,
             },
         });
-
-        preview.getElement().classList.add(
-            css({
-                marginLeft: '-20px',
-                marginRight: '-20px',
-            }),
-        );
+        css(preview.getElement(), {
+            marginLeft: '-20px',
+            marginRight: '-20px',
+        });
         rootEl.append(preview.getElement());
 
         function updatePreview(): void {
@@ -201,7 +197,7 @@ export const filterGrid = {
         return result;
     },
 
-    apply(params: IFilterApply<TFilterGridInput>): boolean {
+    apply(params: TFilterApply<TFilterGridInput>): boolean {
         const context = params.layer.context;
         const klCanvas = params.klCanvas;
         const klHistory = params.klHistory;

@@ -79,6 +79,10 @@
     original: 'More Tools',
     value: ''
   },
+  'tool-more-tools-click-again': {
+    original: 'Click again for more tools',
+    value: ''
+  },
   undo: {
     original: 'Undo',
     value: '撤銷'
@@ -470,11 +474,6 @@
     original: 'Browser Storage',
     value: '保存至瀏覽器'
   },
-  'file-storage-thumb-title': {
-    hint: 'when reopening or reloading',
-    original: 'Restores when reopening page',
-    value: '重新打開頁面時恢復'
-  },
   'file-storage-about': {
     hint: 'link to Browser Storage help/user manual',
     original: 'About Browser Storage',
@@ -482,8 +481,8 @@
   },
   'file-storage-cant-access': {
     hint: 'an error. Can’t access the storage.',
-    original: "Can't access",
-    value: '無法獲取'
+    original: "Can't access storage.",
+    value: '無法存取儲存空間。'
   },
   'file-storage-empty': {
     hint: 'nothing stored',
@@ -495,12 +494,25 @@
     original: 'Store',
     value: '保存'
   },
+  'file-storage-open': {
+    hint: 'verb. to open, or to load',
+    original: 'Open',
+    value: ''
+  },
+  'file-storage-open-confirmation': {
+    original: 'This image is already open in another tab. Open it here too?',
+    value: ''
+  },
+  'file-storage-open-failed': {
+    original: 'Failed to load.',
+    value: ''
+  },
   'file-storage-clear': {
     original: 'Clear',
     value: '清除'
   },
   'file-storage-clear-prompt': {
-    original: 'Clear Browser Storage?',
+    original: 'Clear Browser Storage? Clearing can not be undone.',
     value: ''
   },
   'file-storage-storing': {
@@ -512,6 +524,10 @@
     hint: 'overwrite what is already stored',
     original: 'Overwrite',
     value: '覆蓋'
+  },
+  'file-storage-overwrite-confirm': {
+    original: 'Overwrite Browser Storage? Overwritten data will be permanently deleted.',
+    value: ''
   },
   'file-storage-min-ago': {
     hint: "{x} <- needs to stay, it's a placeholder.",
@@ -567,6 +583,43 @@
     hint: 'verb',
     original: 'Upload',
     value: '上傳'
+  },
+  'tab-recovery-recover-tabs': {
+    hint: 'allows user to recover browser tabs (including the drawing) of this app.',
+    original: 'Recover closed tabs',
+    value: ''
+  },
+  'tab-recovery-explanation': {
+    original: 'Recovery data is only kept for a little while. Save to ensure your work is not lost.',
+    value: ''
+  },
+  'tab-recovery-total-quota-label': {
+    original: 'Total:',
+    value: ''
+  },
+  'tab-recovery-empty': {
+    original: 'Nothing to recover.',
+    value: ''
+  },
+  'tab-recovery-recover': {
+    original: 'Recover',
+    value: ''
+  },
+  'tab-recovery-delete': {
+    original: 'Delete',
+    value: ''
+  },
+  'tab-recovery-delete-confirmation': {
+    original: 'Delete this recovery? Deletion can not be undone.',
+    value: ''
+  },
+  'tab-recovery-failed-to-recover': {
+    original: 'Failed to recover tab.',
+    value: ''
+  },
+  'tab-recovery-recovered': {
+    original: 'Tab recovered.',
+    value: ''
   },
   'cleared-layer': {
     hint: 'the layer has been cleared. It is now empty',
@@ -698,6 +751,10 @@
     hint: 'Cropping is a common feature in image editing.',
     original: 'Crop',
     value: '裁剪'
+  },
+  'cropcopy-mask': {
+    original: 'Mask unselected',
+    value: ''
   },
   'cropcopy-click-hold': {
     original: 'Right-click or press hold to copy.',
@@ -879,6 +936,11 @@
     hint: 'nothing on the layer, just transparency',
     original: 'Layer is empty.',
     value: '圖層為空'
+  },
+  'filter-transform-empty-selection': {
+    hint: 'nothing on the layer, in selected area (via select tool), just transparency',
+    original: 'Layer is empty in selected area.',
+    value: ''
   },
   'filter-transform-title': {
     hint: 'same as the button, but can be longer',
@@ -1377,6 +1439,14 @@
     original: 'Bold',
     value: '加粗'
   },
+  'text-failed-import': {
+    original: 'Failed to import the following files:',
+    value: ''
+  },
+  'text-supported-formats': {
+    original: 'Supported formats:',
+    value: ''
+  },
   'select-select': {
     original: 'Select',
     value: ''
@@ -1496,10 +1566,6 @@
     hint: 'The app is loaded, but it’s still waiting for image',
     original: 'Waiting for image',
     value: '圖像上傳中'
-  },
-  unsaved: {
-    original: 'Unsaved',
-    value: '未保存'
   },
   help: {
     hint: 'or user manual',

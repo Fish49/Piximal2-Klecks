@@ -200,8 +200,8 @@
     "iso-639-1": "dv"
   },
   {
-    "name-english": "Dutch, Flemish",
-    "name": "Nederlands, Vlaams",
+    "name-english": "Dutch",
+    "name": "Nederlands",
     "iso-639-1": "nl"
   },
   {
@@ -241,7 +241,7 @@
   },
   {
     "name-english": "Finnish",
-    "name": "suomi, suomen kieli",
+    "name": "suomi",
     "iso-639-1": "fi"
   },
   {
@@ -491,7 +491,7 @@
   },
   {
     "name-english": "Latvian",
-    "name": "latviešu valoda",
+    "name": "Latviešu Valoda",
     "iso-639-1": "lv"
   },
   {

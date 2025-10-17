@@ -1,6 +1,6 @@
 import { showModal } from './ui/modals/base/showModal';
 import { DynamicModal } from './ui/modals/base/dynamic-modal';
-import { dialogCounter } from './ui/modals/modal-count';
+import { DIALOG_COUNTER } from './ui/modals/modal-count';
 import { Checkbox } from './ui/components/checkbox';
 import { input } from './ui/components/input';
 import { Select } from './ui/components/select';
@@ -8,7 +8,6 @@ import { ImageToggle } from './ui/components/image-toggle';
 import { ImageRadioList } from './ui/components/image-radio-list';
 import { createPenPressureToggle } from './ui/components/create-pen-pressure-toggle';
 import { KlSlider } from './ui/components/kl-slider';
-import { calcSliderFalloffFactor } from './ui/components/slider-falloff';
 import { HexColorDialog } from './ui/modals/color-slider-hex-dialog';
 import { KlColorSlider } from './ui/components/kl-color-slider';
 import { KlColorSliderSmall } from './ui/components/kl-color-slider-small';
@@ -38,25 +37,20 @@ import { TextUi } from './ui/tool-tabs/text-ui';
 import { ShapeUi } from './ui/tool-tabs/shape-ui';
 import { newImageDialog } from './ui/modals/new-image-dialog';
 import { ToolspaceCollapser } from './ui/mobile/toolspace-collapser';
-import { renderText } from './image-operations/render-text';
 import { textToolDialog } from './ui/modals/text-tool-dialog/text-tool-dialog';
 import { showImportImageDialog } from './ui/modals/show-import-image-dialog';
-import { floodFillBits } from './image-operations/flood-fill';
 import * as PSD from './storage/psd';
 import { drawShape, ShapeTool } from './image-operations/shape-tool';
 import { KlCanvas } from './canvas/kl-canvas';
-import * as indexedDb from './storage/indexed-db';
-import { setDbName } from './storage/indexed-db';
-import { filterLib, filterLibStatus } from './filters/filters';
+import { FILTER_LIB, FILTER_LIB_STATUS } from './filters/filters';
 import { BRUSHES } from './brushes/brushes';
-import { brushesUI } from './brushes-ui/brushes-ui';
+import { BRUSHES_UI } from './brushes-ui/brushes-ui';
 import { showIframeModal } from './ui/modals/show-iframe-modal';
 import { RadioList } from './ui/components/radio-list';
 import { BrowserStorageUi } from './ui/components/browser-storage-ui';
-import { drawProject } from './canvas/draw-project';
 import { ProjectStore } from './storage/project-store';
 import { FileUi } from './ui/tool-tabs/file-ui';
-import { FilterUi } from './ui/tool-tabs/filter-ui';
+import { EditUi } from './ui/tool-tabs/edit-ui';
 import { imgurUpload } from './ui/modals/imgur-upload';
 import { loadAgPsd } from './storage/load-ag-psd';
 import { SaveReminder } from './ui/components/save-reminder';
@@ -74,24 +68,21 @@ import { Piximal2Ui } from './ui/tool-tabs/piximal2-ui';
  */
 export const KL = {
     // --- brushes ---
-    brushes: BRUSHES,
-    brushesUI,
+    BRUSHES,
+    BRUSHES_UI,
     BrushSettingService,
 
     // --- canvas ---
     KlCanvas,
-    drawProject,
 
     // --- canvas ui ---
     KlCanvasPreview,
 
     // --- filters ---
-    filterLibStatus,
-    filterLib,
+    FILTER_LIB_STATUS,
+    FILTER_LIB,
 
     // --- image operations ---
-    renderText,
-    floodFillBits,
     ShapeTool,
     drawShape,
     GradientTool,
@@ -99,14 +90,11 @@ export const KL = {
 
     // --- storage ---
     PSD,
-    setDbName,
-    indexedDb,
     ProjectStore,
     loadAgPsd,
     SaveToComputer,
 
     // --- ui - components ---
-    calcSliderFalloffFactor,
     Checkbox,
     input,
     Select,
@@ -141,7 +129,7 @@ export const KL = {
     ToolspaceScroller,
 
     // --- ui - modals ---
-    dialogCounter,
+    DIALOG_COUNTER,
     popup: showModal,
     Popup: DynamicModal,
     clipboardDialog,
@@ -159,8 +147,7 @@ export const KL = {
     TextUi,
     ShapeUi,
     FileUi,
-    FilterUi,
-    Piximal2Ui,
+    EditUi,
     SettingsUi,
     LayersUi,
 };

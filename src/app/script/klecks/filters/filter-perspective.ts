@@ -1,13 +1,13 @@
 import { BB } from '../../bb/bb';
 import { getSharedFx } from '../../fx-canvas/shared-fx';
-import { IFilterApply, IFilterGetDialogParam, TFilterGetDialogResult } from '../kl-types';
+import { TFilterApply, TFilterGetDialogParam, TFilterGetDialogResult } from '../kl-types';
 import { LANG } from '../../language/language';
 import { TwoTabs } from '../ui/components/two-tabs';
 import { TRectanglePoints } from '../../fx-canvas/filters/perspective';
 import { applyToPoint, Matrix } from 'transformation-matrix';
 import { Preview } from '../ui/project-viewport/preview';
 import { TProjectViewportProject } from '../ui/project-viewport/project-viewport';
-import { throwIfNull, throwIfUndefined } from '../../bb/base/base';
+import { css, throwIfNull, throwIfUndefined } from '../../bb/base/base';
 import { DraggableInput } from '../ui/components/draggable-input';
 import { testIsSmall } from '../ui/utils/test-is-small';
 import { getPreviewHeight, getPreviewWidth, MEDIUM_PREVIEW } from '../ui/utils/preview-size';
@@ -19,7 +19,7 @@ export type TFilterPerspectiveInput = {
 };
 
 export const filterPerspective = {
-    getDialog(params: IFilterGetDialogParam) {
+    getDialog(params: TFilterGetDialogParam) {
         const context = params.context;
         const klCanvas = params.klCanvas;
         if (!context || !klCanvas) {
@@ -138,7 +138,7 @@ export const filterPerspective = {
                 afterInputs.forEach((item) => item.setTransform(transform));
             },
         });
-        BB.css(preview.getElement(), {
+        css(preview.getElement(), {
             overflow: 'hidden',
             marginLeft: '-20px',
             marginRight: '-20px',
@@ -155,7 +155,7 @@ export const filterPerspective = {
         update();
         result.destroy = (): void => {
             preview.destroy();
-            texture.destroy;
+            texture.destroy();
             beforeInputs.forEach((item) => item.destroy());
             afterInputs.forEach((item) => item.destroy());
         };
@@ -170,7 +170,7 @@ export const filterPerspective = {
         return result;
     },
 
-    apply(params: IFilterApply<TFilterPerspectiveInput>): boolean {
+    apply(params: TFilterApply<TFilterPerspectiveInput>): boolean {
         const context = params.layer.context;
         const klHistory = params.klHistory;
         const before = params.input.before;

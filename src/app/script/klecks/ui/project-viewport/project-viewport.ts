@@ -1,11 +1,11 @@
 import { TMixMode } from '../../kl-types';
 import { BB } from '../../../bb/bb';
-import { throwIfNull } from '../../../bb/base/base';
-import { theme } from '../../../theme/theme';
+import { css, throwIfNull } from '../../../bb/base/base';
+import { THEME } from '../../../theme/theme';
 import { Matrix, inverse, compose } from 'transformation-matrix';
 import { createMatrixFromTransform } from '../../../bb/transform/create-matrix-from-transform';
 import { matrixToTuple } from '../../../bb/math/matrix-to-tuple';
-import { DEBUG_RENDERER_ENABLED, debugRender } from './debug-render';
+import { DEBUG_RENDERER_ENABLED, DEBUG_RENDER } from './debug-render';
 
 function fixScale(scale: number, pixels: number): number {
     return Math.round(pixels * scale) / pixels;
@@ -88,7 +88,7 @@ export class ProjectViewport {
 
     private onIsDark = (): void => {
         this.pattern = throwIfNull(
-            this.ctx.createPattern(BB.createCheckerCanvas(10, theme.isDark()), 'repeat'),
+            this.ctx.createPattern(BB.createCheckerCanvas(10, THEME.isDark()), 'repeat'),
         );
         this.render();
     };
@@ -119,7 +119,7 @@ export class ProjectViewport {
         this.resFactor = this.useNativeResolution ? devicePixelRatio : 1;
         this.canvas = BB.canvas(this.width * this.resFactor, this.height * this.resFactor);
         this.ctx = BB.ctx(this.canvas);
-        BB.css(this.canvas, {
+        css(this.canvas, {
             width: this.doFillParent ? '100%' : this.width + 'px',
             height: this.doFillParent ? '100%' : this.height + 'px',
             imageRendering:
@@ -129,15 +129,15 @@ export class ProjectViewport {
         window.addEventListener('resize', this.resizeListener);
 
         this.pattern = throwIfNull(
-            this.ctx.createPattern(BB.createCheckerCanvas(10, theme.isDark()), 'repeat'),
+            this.ctx.createPattern(BB.createCheckerCanvas(10, THEME.isDark()), 'repeat'),
         );
-        theme.addIsDarkListener(this.onIsDark);
+        THEME.addIsDarkListener(this.onIsDark);
 
         // this.render();
     }
 
     render(optimizeForAnimation?: boolean): void {
-        const isDark = theme.isDark();
+        const isDark = THEME.isDark();
         const transform = {
             ...this.transform,
             x: this.transform.x,
@@ -198,7 +198,7 @@ export class ProjectViewport {
         if (this.drawBackground) {
             this.ctx.save();
 
-            this.ctx.fillStyle = theme.isDark() ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)';
+            this.ctx.fillStyle = THEME.isDark() ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)';
             const scaledPixelX = 1 / renderedTransform.scaleX;
             const scaledPixelY = 1 / renderedTransform.scaleY;
             this.ctx.fillRect(
@@ -247,7 +247,7 @@ export class ProjectViewport {
         this.renderAfter?.(this.ctx, renderedTransform);
 
         DEBUG_RENDERER_ENABLED &&
-            debugRender.render(
+            DEBUG_RENDER.render(
                 this.ctx,
                 this.project.width,
                 this.project.height,
@@ -262,7 +262,7 @@ export class ProjectViewport {
         this.width = width;
         this.height = height;
 
-        BB.css(this.canvas, {
+        css(this.canvas, {
             width: this.doFillParent ? '100%' : this.width + 'px',
             height: this.doFillParent ? '100%' : this.height + 'px',
         });
@@ -295,7 +295,7 @@ export class ProjectViewport {
 
     destroy(): void {
         BB.freeCanvas(this.canvas);
-        theme.removeIsDarkListener(this.onIsDark);
+        THEME.removeIsDarkListener(this.onIsDark);
         window.removeEventListener('resize', this.resizeListener);
     }
 }

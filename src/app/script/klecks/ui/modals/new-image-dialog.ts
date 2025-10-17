@@ -3,21 +3,20 @@ import { Select } from '../components/select';
 import { ColorOptions } from '../components/color-options';
 import { showModal } from './base/showModal';
 import { LANG } from '../../../language/language';
-import { IRGB, IRGBA } from '../../kl-types';
-import { ISize2D } from '../../../bb/bb-types';
+import { TRgb, TRgba } from '../../kl-types';
+import { TSize2D } from '../../../bb/bb-types';
 import { table } from '../components/table';
-import { ERASE_COLOR } from '../../brushes/erase-color';
-import { theme } from '../../../theme/theme';
+import { css } from '../../../bb/base/base';
 
 export function newImageDialog(p: {
-    currentColor: IRGB; // current color
-    secondaryColor: IRGB;
+    currentColor: TRgb; // current color
+    secondaryColor: TRgb;
     maxCanvasSize: number;
     canvasWidth: number; // current canvas size
     canvasHeight: number; // current canvas size
     workspaceWidth: number;
     workspaceHeight: number;
-    onConfirm: (width: number, height: number, color: IRGBA) => void;
+    onConfirm: (width: number, height: number, color: TRgba) => void;
     onCancel: () => void;
 }): void {
     const currentColor = p.currentColor;
@@ -36,7 +35,7 @@ export function newImageDialog(p: {
         width: number,
         height: number,
         padding: number,
-    ): ISize2D {
+    ): TSize2D {
         return BB.fitInto(
             ratioX,
             ratioY,
@@ -47,7 +46,7 @@ export function newImageDialog(p: {
     }
 
     const newImDiv = BB.el();
-    const widthInput = BB.el({ tagName: 'input' });
+    const widthInput = BB.el({ tagName: 'input', custom: { name: 'image-width' } });
     const unitStyle = {
         color: '#888',
         fontSize: '12px',
@@ -57,7 +56,7 @@ export function newImageDialog(p: {
         textContent: LANG('new-px'),
         css: unitStyle,
     });
-    const heightInput = BB.el({ tagName: 'input' });
+    const heightInput = BB.el({ tagName: 'input', custom: { name: 'image-height' } });
     const heightUnit = BB.el({
         textContent: LANG('new-px'),
         css: unitStyle,
@@ -69,7 +68,7 @@ export function newImageDialog(p: {
     widthInput.type = 'number';
     widthInput.min = '1';
     widthInput.max = '' + maxCanvasSize;
-    BB.css(widthInput, {
+    css(widthInput, {
         width: '70px',
     });
 
@@ -93,7 +92,7 @@ export function newImageDialog(p: {
         [BB.el({ css: { height: '5px' } }), '', ''],
         [LANG('height') + ':&nbsp;', heightInput, heightUnit],
     ]);
-    BB.css(sizeTable, {
+    css(sizeTable, {
         marginBottom: '10px',
     });
 
@@ -109,15 +108,16 @@ export function newImageDialog(p: {
             display: 'flex',
             flexWrap: 'wrap',
             gap: '5px',
+            marginBottom: '10px',
         },
     });
-    const presetFitBtn = BB.el({ tagName: 'button' });
-    templateWrapper.style.marginBottom = '10px';
-    const presetCurrentBtn = BB.el({ tagName: 'button' });
-    const presetSquareBtn = BB.el({ tagName: 'button' });
-    const presetLandscapeBtn = BB.el({ tagName: 'button' });
-    const presetPortraitBtn = BB.el({ tagName: 'button' });
-    const presetOversizeBtn = BB.el({ tagName: 'button' });
+    const presetBtnConfig = { tagName: 'button', css: { flexGrow: '1' } } as const;
+    const presetFitBtn = BB.el(presetBtnConfig);
+    const presetCurrentBtn = BB.el(presetBtnConfig);
+    const presetSquareBtn = BB.el(presetBtnConfig);
+    const presetLandscapeBtn = BB.el(presetBtnConfig);
+    const presetPortraitBtn = BB.el(presetBtnConfig);
+    const presetOversizeBtn = BB.el(presetBtnConfig);
 
     presetCurrentBtn.textContent = LANG('new-current');
     presetFitBtn.textContent = LANG('new-fit');
@@ -215,17 +215,19 @@ export function newImageDialog(p: {
             updateRatio();
             select.setValue(undefined);
         },
+        name: 'image-format',
     });
     setTimeout(() => {
         // safari: not empty without also setting it to null via timeout
         select.setValue(undefined);
     }, 0);
-    BB.css(select.getElement(), {
+    css(select.getElement(), {
         width: '80px',
+        flexGrow: '1',
     });
     templateWrapper.append(select.getElement());
 
-    let backgroundRGBA = { r: 255, g: 255, b: 255, a: 1 };
+    let backgroundRgba = { r: 255, g: 255, b: 255, a: 1 };
 
     const colorOptionsArr = [
         { r: 255, g: 255, b: 255, a: 1 },
@@ -244,21 +246,12 @@ export function newImageDialog(p: {
             a: 1,
         },
     ];
-    let initColorIndex = 0;
-    if (theme.isDark()) {
-        colorOptionsArr.forEach((item, index) => {
-            if (item.r === ERASE_COLOR && item.g === ERASE_COLOR && item.b === ERASE_COLOR) {
-                initColorIndex = index;
-                backgroundRGBA = item;
-            }
-        });
-    }
 
     const colorOptions = new ColorOptions({
         colorArr: colorOptionsArr,
-        initialIndex: initColorIndex,
+        initialIndex: 0,
         onChange: function (rgbaObj): void {
-            backgroundRGBA = rgbaObj!;
+            backgroundRgba = rgbaObj!;
             preview.style.backgroundColor =
                 'rgba(' +
                 rgbaObj!.r +
@@ -282,6 +275,7 @@ export function newImageDialog(p: {
             padding: '10px',
             marginTop: '10px',
             marginLeft: '-20px',
+            background: 'var(--kl-checkerboard-background)',
         },
     });
     const preview = BB.el({
@@ -291,13 +285,13 @@ export function newImageDialog(p: {
             height: 100 + 'px',
             backgroundColor:
                 'rgba(' +
-                backgroundRGBA.r +
+                backgroundRgba.r +
                 ',' +
-                backgroundRGBA.g +
+                backgroundRgba.g +
                 ',' +
-                backgroundRGBA.b +
+                backgroundRgba.b +
                 ', ' +
-                backgroundRGBA.a +
+                backgroundRgba.a +
                 ')',
             marginLeft: 'auto',
             marginRight: 'auto',
@@ -333,7 +327,7 @@ export function newImageDialog(p: {
         function hcf(u: number, v: number): number {
             let U = u,
                 V = v;
-            // eslint-disable-next-line no-constant-condition
+
             while (true) {
                 if (!(U %= V)) {
                     return V;
@@ -419,15 +413,8 @@ export function newImageDialog(p: {
 
         preview.style.width = w + 'px';
         preview.style.height = h + 'px';
-        BB.createCheckerDataUrl(
-            parseInt('' + 30 * (w / realw)),
-            function (url) {
-                previewWrapper.style.background = 'url(' + url + ')';
-            },
-            theme.isDark(),
-        );
+        previewWrapper.style.backgroundSize = Math.round(Math.max(4, 60 * (w / realw))) + 'px';
     }
-    theme.addIsDarkListener(updateRatio);
 
     widthInput.onchange = (): void => {
         if (widthInput.value === '' || parseInt(widthInput.value) < 0) {
@@ -484,7 +471,6 @@ export function newImageDialog(p: {
 
             select.destroy();
             colorOptions.destroy();
-            theme.removeIsDarkListener(updateRatio);
 
             if (
                 result === 'Cancel' ||
@@ -496,7 +482,7 @@ export function newImageDialog(p: {
                 onCancel();
                 return;
             }
-            onConfirm(parseInt(widthInput.value), parseInt(heightInput.value), backgroundRGBA);
+            onConfirm(parseInt(widthInput.value), parseInt(heightInput.value), backgroundRgba);
         },
         clickOnEnter: 'Ok',
     });

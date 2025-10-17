@@ -1,6 +1,5 @@
 import { BB } from '../../../bb/bb';
-import { IRGBA } from '../../kl-types';
-import { theme } from '../../../theme/theme';
+import { TRgba } from '../../kl-types';
 import { ColorConverter } from '../../../bb/color/color';
 import { c } from '../../../bb/base/c';
 
@@ -15,20 +14,20 @@ export class ColorOptions {
         el: HTMLElement;
         setIsSelected: (b: boolean) => void;
     }[];
-    private readonly colorArr: (IRGBA | null)[] = [];
+    private readonly colorArr: (TRgba | null)[] = [];
     private selectedIndex: number = 0;
     private readonly colorInput: HTMLInputElement;
 
-    private readonly updateCheckerboard: () => void;
     private readonly onColorInputChange: () => void;
 
     // ----------------------------------- public -----------------------------------
     constructor(p: {
-        colorArr: (IRGBA | null)[]; // duplicates will be removed
-        onChange: (rgbaObj: IRGBA | null) => void;
+        colorArr: (TRgba | null)[]; // duplicates will be removed
+        onChange: (rgbaObj: TRgba | null) => void;
         label?: string;
         initialIndex?: number; // index before duplicates were removed
         title?: string;
+        css?: Partial<CSSStyleDeclaration>;
     }) {
         this.rootEl = BB.el({
             content: p.label ? p.label : '',
@@ -38,12 +37,12 @@ export class ColorOptions {
                 alignItems: 'center',
                 gap: '7px',
                 position: 'relative',
+                ...p.css,
             },
         });
 
         this.buttonArr = [];
         const buttonSize = 22;
-        const checkerUrl = BB.createCheckerDataUrl(5, undefined, theme.isDark());
 
         this.onColorInputChange = () => {
             const i = this.selectedIndex;
@@ -134,7 +133,7 @@ export class ColorOptions {
                     },
                 });
                 if (color && color.a === 0) {
-                    colorButton.style.backgroundImage = 'url(' + checkerUrl + ')';
+                    colorButton.style.background = 'var(--kl-checkerboard-background)';
                 }
 
                 const setIsSelected = (b: boolean): void => {
@@ -156,17 +155,6 @@ export class ColorOptions {
             }
         };
         update();
-
-        this.updateCheckerboard = (): void => {
-            const checkerUrl = BB.createCheckerDataUrl(5, undefined, theme.isDark());
-            this.buttonArr.forEach((button, i) => {
-                const color = this.colorArr[i];
-                if (color && color.a === 0) {
-                    button.el.style.backgroundImage = 'url(' + checkerUrl + ')';
-                }
-            });
-        };
-        theme.addIsDarkListener(this.updateCheckerboard);
     }
 
     // ---- interface ----
@@ -174,7 +162,7 @@ export class ColorOptions {
         return this.rootEl;
     }
 
-    getValue(): IRGBA | null {
+    getValue(): TRgba | null {
         return this.colorArr[this.selectedIndex];
     }
 
@@ -184,7 +172,6 @@ export class ColorOptions {
             BB.destroyEl(item.el);
         });
         this.buttonArr.splice(0, this.buttonArr.length);
-        theme.removeIsDarkListener(this.updateCheckerboard);
         this.colorInput.onchange = null;
         this.colorInput.oninput = null;
     }

@@ -1,22 +1,21 @@
 import { BB } from '../../bb/bb';
-import { getSharedFx } from '../../fx-canvas/shared-fx';
-import { IFilterApply, IFilterGetDialogParam, TFilterGetDialogResult } from '../kl-types';
+import { TFilterApply, TFilterGetDialogParam, TFilterGetDialogResult } from '../kl-types';
 import { CurvesInput, getDefaultCurvesInput, TCurvesInput } from './filter-curves/curves-input';
 import { Options } from '../ui/components/options';
 import { FxPreviewRenderer } from '../ui/project-viewport/fx-preview-renderer';
 import { TProjectViewportProject } from '../ui/project-viewport/project-viewport';
 import { Preview } from '../ui/project-viewport/preview';
-import { css } from '@emotion/css/dist/emotion-css.cjs';
 import { testIsSmall } from '../ui/utils/test-is-small';
 import { getPreviewHeight, getPreviewWidth } from '../ui/utils/preview-size';
-import { canvasToLayerTiles } from '../history/push-helpers/canvas-to-layer-tiles';
+import { applyFxFilter } from './apply-fx-filter';
+import { css } from '../../bb/base/base';
 
 export type TFilterCurvesInput = {
     curves: TCurvesInput;
 };
 
 export const filterCurves = {
-    getDialog(params: IFilterGetDialogParam) {
+    getDialog(params: TFilterGetDialogParam) {
         const context = params.context;
         const klCanvas = params.klCanvas;
         if (!context || !klCanvas) {
@@ -41,6 +40,7 @@ export const filterCurves = {
             onUpdate: (fxCanvas) => {
                 return fxCanvas.curves(curves.r, curves.g, curves.b);
             },
+            selection: klCanvas.getSelection(),
         });
 
         const previewLayerArr: TProjectViewportProject['layers'] = [];
@@ -67,13 +67,12 @@ export const filterCurves = {
                 height: context.canvas.height,
                 layers: previewLayerArr,
             },
+            selection: klCanvas.getSelection(),
         });
-        preview.getElement().classList.add(
-            css({
-                marginLeft: '-20px',
-                marginRight: '-20px',
-            }),
-        );
+        css(preview.getElement(), {
+            marginLeft: '-20px',
+            marginRight: '-20px',
+        });
 
         const input = new CurvesInput({
             curves,
@@ -102,43 +101,20 @@ export const filterCurves = {
         return result;
     },
 
-    apply(params: IFilterApply<TFilterCurvesInput>): boolean {
+    apply(params: TFilterApply<TFilterCurvesInput>): boolean {
         const context = params.layer.context;
         const curves = params.input.curves;
         const klHistory = params.klHistory;
         if (!context) {
             return false;
         }
-        const fxCanvas = getSharedFx();
-        if (!fxCanvas) {
-            return false; // todo more specific error?
-        }
-        const texture = fxCanvas.texture(context.canvas);
-        fxCanvas.draw(texture).curves(curves.r, curves.g, curves.b).update();
-        context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-        context.drawImage(fxCanvas, 0, 0);
-        texture.destroy();
-
-        {
-            const layerMap = Object.fromEntries(
-                params.klCanvas.getLayers().map((layerItem) => {
-                    if (layerItem.id === params.layer.id) {
-                        return [
-                            layerItem.id,
-                            {
-                                tiles: canvasToLayerTiles(params.layer.canvas),
-                            },
-                        ];
-                    }
-
-                    return [layerItem.id, {}];
-                }),
-            );
-            klHistory.push({
-                layerMap,
-            });
-        }
-
-        return true;
+        return applyFxFilter(
+            context,
+            params.klCanvas.getSelection(),
+            (fxCanvas) => {
+                fxCanvas.curves(curves.r, curves.g, curves.b);
+            },
+            klHistory,
+        );
     },
 };

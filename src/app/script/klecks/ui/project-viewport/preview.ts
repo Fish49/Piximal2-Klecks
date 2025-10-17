@@ -2,24 +2,27 @@ import { c } from '../../../bb/base/c';
 import { ProjectViewport, TProjectViewportProject, TViewportTransform } from './project-viewport';
 import { BB } from '../../../bb/bb';
 import { PointerListener } from '../../../bb/input/pointer-listener';
-import toolZoomInImg from '/src/app/img/ui/tool-zoom-in.svg';
-import toolZoomOutImg from '/src/app/img/ui/tool-zoom-out.svg';
-import viewportResetImg from '/src/app/img/ui/viewport-reset.svg';
-import toolHandImg from '/src/app/img/ui/tool-hand.svg';
-import editPencilImg from '/src/app/img/ui/edit-pencil.svg';
+import toolZoomInImg from 'url:/src/app/img/ui/tool-zoom-in.svg';
+import toolZoomOutImg from 'url:/src/app/img/ui/tool-zoom-out.svg';
+import viewportResetImg from 'url:/src/app/img/ui/viewport-reset.svg';
+import toolHandImg from 'url:/src/app/img/ui/tool-hand.svg';
+import editPencilImg from 'url:/src/app/img/ui/edit-pencil.svg';
 import { EventChain } from '../../../bb/input/event-chain/event-chain';
 import { DoubleTapper } from '../../../bb/input/event-chain/double-tapper';
-import { IChainElement } from '../../../bb/input/event-chain/event-chain.types';
-import { css } from '@emotion/css';
+import { TChainElement } from '../../../bb/input/event-chain/event-chain.types';
+import * as classes from './preview.module.scss';
 import { zoomByStep } from './utils/zoom-by-step';
 import { PinchZoomer } from '../../../bb/input/event-chain/pinch-zoomer';
 import { LANG } from '../../../language/language';
-import { inverse, applyToPoint } from 'transformation-matrix';
+import { applyToPoint, inverse } from 'transformation-matrix';
 import { createTransform } from '../../../bb/transform/create-transform';
 import { toMetaTransform } from '../../../bb/transform/to-meta-transform';
 import { Options } from '../components/options';
-import { IPointerEvent, IWheelEvent } from '../../../bb/input/event.types';
+import { TPointerEvent, TWheelEvent } from '../../../bb/input/event.types';
 import { createMatrixFromTransform } from '../../../bb/transform/create-matrix-from-transform';
+import { MultiPolygon } from 'polygon-clipping';
+import { SelectionRenderer } from '../easel/selection-renderer';
+import { css } from '../../../bb/base/base';
 
 export type TPreviewMode = 'edit' | 'hand';
 
@@ -33,6 +36,7 @@ export type TPreviewParams = {
     padding?: number; //default -> DEFAULT_PADDING
     hasBorder?: boolean; // default true
     editIcon?: string;
+    selection?: MultiPolygon;
 };
 
 const DEFAULT_PADDING = 10;
@@ -57,6 +61,7 @@ export class Preview {
     };
     private readonly modeToggle: Options<TPreviewMode> | undefined;
     private readonly pointerChain: EventChain;
+    private selectionRenderer: SelectionRenderer | undefined;
 
     private renderLoop = (): void => {
         this.animationFrameId = requestAnimationFrame(this.renderLoop);
@@ -65,6 +70,7 @@ export class Preview {
             this.doRender = false;
             this.viewport.render();
             const viewportTransform = this.viewport.getTransform();
+            this.selectionRenderer?.setTransform(viewportTransform);
             if (
                 this.onTransformChange &&
                 JSON.stringify(this.lastEmittedTransform) !== JSON.stringify(viewportTransform)
@@ -252,7 +258,7 @@ export class Preview {
         });
 
         this.pointerChain = new EventChain({
-            chainArr: [pinchZoomer as IChainElement, doubleTapper as IChainElement],
+            chainArr: [pinchZoomer as TChainElement, doubleTapper as TChainElement],
         });
         this.pointerChain.setChainOut((e) => {
             if (e.button && ['left', 'middle'].includes(e.button)) {
@@ -265,15 +271,8 @@ export class Preview {
             }
         });
 
-        this.viewport.getElement().classList.add(
-            css({
-                cursor: 'grab',
-                ':active': {
-                    cursor: 'grabbing',
-                },
-            }),
-        );
-        BB.css(this.viewport.getElement(), {
+        this.viewport.getElement().classList.add(classes.viewport);
+        css(this.viewport.getElement(), {
             userSelect: 'none',
             touchAction: 'none',
         });
@@ -301,6 +300,27 @@ export class Preview {
         this.viewport.getElement().addEventListener('wheel', (e) => {
             e.preventDefault();
         });
+
+        const svgRoot = BB.createSvg({
+            elementType: 'svg',
+        });
+        css(svgRoot, {
+            position: 'absolute',
+            left: '0',
+            top: '0',
+            width: '100%',
+            height: '100%',
+            pointerEvents: 'none',
+        });
+        if (p.selection) {
+            this.selectionRenderer = new SelectionRenderer({
+                transform: this.lastEmittedTransform,
+                selection: p.selection,
+                width: this.width,
+                height: this.height,
+            });
+            svgRoot.append(this.selectionRenderer.getElement());
+        }
 
         if (p.hasEditMode) {
             this.modeToggle = new Options<TPreviewMode>({
@@ -331,22 +351,10 @@ export class Preview {
             });
         }
 
-        const elCss = css(
-            p.hasBorder === false
-                ? {}
-                : {
-                      borderTop: '1px solid #7f7f7f',
-                      borderBottom: '1px solid #7f7f7f',
-                      '.kl-theme-dark &': {
-                          borderTop: '1px solid #636363',
-                          borderBottom: '1px solid #636363',
-                      },
-                  },
-        );
         // pointer-events: auto - So the canvas can be ignored, while the buttons still work.
         this.rootEl = c(
             {
-                className: elCss,
+                className: p.hasBorder === false ? undefined : classes.preview,
                 css: {
                     position: 'relative',
                     zIndex: '0', // prevent buttons from sitting on top of other modals
@@ -354,6 +362,7 @@ export class Preview {
             },
             [
                 this.viewport.getElement(),
+                svgRoot,
                 ...(this.modeToggle
                     ? [
                           c(',pos-absolute,left-5,top-5,z-1,pointer-auto', [
@@ -419,11 +428,11 @@ export class Preview {
         return this.viewport.getTransform();
     }
 
-    onPointer(event: IPointerEvent): void {
+    onPointer(event: TPointerEvent): void {
         this.pointerChain.chainIn(event);
     }
 
-    onWheel = (e: IWheelEvent): void => {
+    onWheel = (e: TWheelEvent): void => {
         const viewportRect = this.viewport.getElement().getBoundingClientRect();
         const vX = e.pageX - viewportRect.x;
         const vY = e.pageY - viewportRect.y;
@@ -449,5 +458,6 @@ export class Preview {
         this.viewportPointerListener.destroy();
         this.rootEl.remove();
         this.modeToggle && this.modeToggle.destroy();
+        this.selectionRenderer?.destroy();
     }
 }

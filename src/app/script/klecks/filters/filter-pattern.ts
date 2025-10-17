@@ -1,9 +1,9 @@
 import { BB } from '../../bb/bb';
 import {
-    IFilterApply,
-    IFilterGetDialogParam,
+    TFilterApply,
+    TFilterGetDialogParam,
     TFilterGetDialogResult,
-    IKlBasicLayer,
+    TKlBasicLayer,
 } from '../kl-types';
 import { input } from '../ui/components/input';
 import { KlSlider } from '../ui/components/kl-slider';
@@ -11,8 +11,8 @@ import { LANG } from '../../language/language';
 import { EVENT_RES_MS } from './filters-consts';
 import { KlCanvasPreview } from '../ui/project-viewport/kl-canvas-preview';
 import { TwoTabs } from '../ui/components/two-tabs';
-import { IVector2D } from '../../bb/bb-types';
-import { throwIfNull } from '../../bb/base/base';
+import { TVector2D } from '../../bb/bb-types';
+import { css, throwIfNull } from '../../bb/base/base';
 import { testIsSmall } from '../ui/utils/test-is-small';
 import { getPreviewHeight, getPreviewWidth, MEDIUM_PREVIEW } from '../ui/utils/preview-size';
 import { canvasToLayerTiles } from '../history/push-helpers/canvas-to-layer-tiles';
@@ -138,7 +138,7 @@ function drawPattern(context: CanvasRenderingContext2D, settings: TFilterPattern
 }
 
 export const filterPattern = {
-    getDialog(params: IFilterGetDialogParam) {
+    getDialog(params: TFilterGetDialogParam) {
         const isSmall = testIsSmall();
         const maxSize = 1024;
         const rootEl = BB.el();
@@ -279,7 +279,7 @@ export const filterPattern = {
             },
             manualInputRoundDigits: 2,
         });
-        BB.css(blendSlider.getElement(), {
+        css(blendSlider.getElement(), {
             margin: '10px 0',
         });
 
@@ -328,7 +328,7 @@ export const filterPattern = {
             },
         });
 
-        const previewLayer: IKlBasicLayer = {
+        const previewLayer: TKlBasicLayer = {
             image: BB.canvas(renderW, renderH),
             isVisible: layers[selectedLayerIndex].isVisible,
             opacity: layers[selectedLayerIndex].opacity,
@@ -353,7 +353,7 @@ export const filterPattern = {
         });
 
         const overlayCanvas = BB.canvas(w, h);
-        BB.css(overlayCanvas, {
+        css(overlayCanvas, {
             position: 'absolute',
             left: '0',
             top: '0',
@@ -374,8 +374,8 @@ export const filterPattern = {
 
         // ---- preview input processing ----
         const inputs = {} as {
-            start: IVector2D;
-            end: IVector2D | null;
+            start: TVector2D;
+            end: TVector2D | null;
             oldSettings: TFilterPatternInput;
             state: null | 'move' | 'select';
         };
@@ -616,7 +616,7 @@ export const filterPattern = {
         return result;
     },
 
-    apply(params: IFilterApply<TFilterPatternInput>): boolean {
+    apply(params: TFilterApply<TFilterPatternInput>): boolean {
         const klCanvas = params.klCanvas;
         const ctx = params.layer.context;
         const klHistory = params.klHistory;

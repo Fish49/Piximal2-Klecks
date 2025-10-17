@@ -1,5 +1,6 @@
 import { BB } from '../../../bb/bb';
-import { IKeyString } from '../../../bb/bb-types';
+import { TKeyString } from '../../../bb/bb-types';
+import { css } from '../../../bb/base/base';
 
 type TSelectItem<ValueType> =
     | [ValueType, string]
@@ -23,8 +24,9 @@ export class Select<ValueType extends string> {
         optionArr: (TSelectItem<ValueType> | undefined)[];
         initValue?: ValueType; // default ''
         onChange?: (val: ValueType) => void;
-        css?: IKeyString;
+        css?: TKeyString;
         title?: string;
+        name: string;
     }) {
         this.selectEl = BB.el({
             tagName: 'select',
@@ -35,9 +37,12 @@ export class Select<ValueType extends string> {
                 fontSize: '15px',
                 padding: '3px',
             },
+            custom: {
+                name: p.name,
+            },
         });
         if (p.css) {
-            BB.css(this.selectEl, p.css);
+            css(this.selectEl, p.css);
         }
 
         const isFocusable = p.isFocusable;
@@ -111,7 +116,7 @@ export class Select<ValueType extends string> {
             el.value = item[0];
             el.textContent = item[1];
             if (item[2]) {
-                BB.css(el, item[2].css);
+                css(el, item[2].css);
             }
             this.optionArr.push({
                 item,

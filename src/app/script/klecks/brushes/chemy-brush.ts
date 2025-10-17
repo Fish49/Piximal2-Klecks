@@ -1,16 +1,20 @@
 import { BB } from '../../bb/bb';
-import { IRGB } from '../kl-types';
-import { IBounds } from '../../bb/bb-types';
+import { TRgb } from '../kl-types';
+import { TBounds } from '../../bb/bb-types';
 import { ERASE_COLOR } from './erase-color';
 import { KlHistory } from '../history/kl-history';
 import { getPushableLayerChange } from '../history/push-helpers/get-pushable-layer-change';
 import { canvasToLayerTiles } from '../history/push-helpers/canvas-to-layer-tiles';
+import { MultiPolygon } from 'polygon-clipping';
+import { getSelectionPath2d } from '../../bb/multi-polygon/get-selection-path-2d';
+import { boundsOverlap, integerBounds } from '../../bb/math/math';
+import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bounds';
 
 type TChemyMode = 'fill' | 'stroke';
 
 export class ChemyBrush {
     private context: CanvasRenderingContext2D = {} as CanvasRenderingContext2D;
-    private settingColor: IRGB = {} as IRGB;
+    private settingColor: TRgb = {} as TRgb;
     private settingSize: number = 0.25; // radius - 0.5 - 99999
     private settingOpacity: number = 1; // 0-1
     private settingLockLayerAlpha: boolean = false;
@@ -29,7 +33,11 @@ export class ChemyBrush {
     private path: { x: number; y: number }[] = [];
     private minY: number = 0;
     private maxY: number = 0;
-    private completeRedrawBounds: IBounds | undefined;
+    private completeRedrawBounds: TBounds | undefined;
+
+    private selection: MultiPolygon | undefined;
+    private selectionPath: Path2D | undefined;
+    private selectionBounds: TBounds | undefined;
 
     private updateCompleteRedrawBounds(x: number, y: number): void {
         let bounds = { x1: x, y1: y, x2: x, y2: y };
@@ -55,13 +63,23 @@ export class ChemyBrush {
         bounds.x2 = Math.ceil(bounds.x2 + buffer);
         bounds.y2 = Math.ceil(bounds.y2 + buffer);
 
-        this.completeRedrawBounds = BB.updateBounds(this.completeRedrawBounds, bounds);
+        const boundsWithinSelection = this.selectionBounds
+            ? boundsOverlap(bounds, this.selectionBounds)
+            : bounds;
+        if (!boundsWithinSelection) {
+            return;
+        }
+        this.completeRedrawBounds = BB.updateBounds(
+            this.completeRedrawBounds,
+            boundsWithinSelection,
+        );
     }
 
     private drawShape(): void {
         this.context.save();
         this.context.clearRect(0, 0, this.context.canvas.width, this.context.canvas.height);
         this.context.drawImage(this.copyCanvas, 0, 0);
+        this.selectionPath && this.context.clip(this.selectionPath);
 
         const color = { ...this.settingColor };
         if (this.settingIsEraser) {
@@ -202,7 +220,7 @@ export class ChemyBrush {
         this.settingOpacity = o;
     }
 
-    setColor(c: IRGB): void {
+    setColor(c: TRgb): void {
         this.settingColor = BB.copyObj(c);
     }
 
@@ -271,6 +289,11 @@ export class ChemyBrush {
     }
 
     startLine(x: number, y: number): void {
+        this.selection = this.klHistory.getComposed().selection.value;
+        this.selectionPath = this.selection ? getSelectionPath2d(this.selection) : undefined;
+        this.selectionBounds = this.selection
+            ? integerBounds(getMultiPolyBounds(this.selection))
+            : undefined;
         this.isDrawing = true;
         this.path = [{ x, y }];
         this.minY = y;
@@ -312,13 +335,6 @@ export class ChemyBrush {
         }
         this.path = [];
         this.copyCanvas = {} as HTMLCanvasElement;
-    }
-
-    drawImage(im: HTMLCanvasElement, x: number, y: number): void {
-        this.context.save();
-        this.context.clearRect(x, y, im.width, im.height);
-        this.context.drawImage(im, x, y);
-        this.context.restore();
     }
 
     drawLineSegment(x1: number, y1: number, x2: number, y2: number): void {

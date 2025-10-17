@@ -1,8 +1,9 @@
 import { Options } from '../../ui/components/options';
 import { LANG } from '../../../language/language';
 import { BB } from '../../../bb/bb';
-import { IVector2D } from '../../../bb/bb-types';
+import { TVector2D } from '../../../bb/bb-types';
 import { PointerListener } from '../../../bb/input/pointer-listener';
+import { css } from '../../../bb/base/base';
 
 type TCurvePoint = {
     el: HTMLElement;
@@ -122,7 +123,7 @@ export class CurvesInput {
         const createPoint = (
             x: number,
             y: number,
-            callback: (p: IVector2D) => void,
+            callback: (p: TVector2D) => void,
             lock?: boolean,
         ): TCurvePoint => {
             const gripSize = 14;
@@ -140,7 +141,7 @@ export class CurvesInput {
             });
 
             const update = () => {
-                BB.css(pointEl, {
+                css(pointEl, {
                     left: x - gripSize / 2 + 'px',
                     top: y - gripSize / 2 + 'px',
                 });
@@ -177,7 +178,7 @@ export class CurvesInput {
                 y = newY;
                 internalY = y;
                 internalX = x;
-                BB.css(pointEl, {
+                css(pointEl, {
                     left: x - gripSize / 2 + 'px',
                     top: y - gripSize / 2 + 'px',
                 });
@@ -210,24 +211,24 @@ export class CurvesInput {
         this.p0 = createPoint(
             0,
             areaH,
-            (val: IVector2D) => {
+            (val: TVector2D) => {
                 updateControl(0, val.x, val.y);
                 update();
             },
             true,
         );
-        this.p1 = createPoint(areaW / 3, (areaH / 3) * 2, (val: IVector2D) => {
+        this.p1 = createPoint(areaW / 3, (areaH / 3) * 2, (val: TVector2D) => {
             updateControl(1, val.x, val.y);
             update();
         });
-        this.p2 = createPoint((areaW / 3) * 2, areaH / 3, (val: IVector2D) => {
+        this.p2 = createPoint((areaW / 3) * 2, areaH / 3, (val: TVector2D) => {
             updateControl(2, val.x, val.y);
             update();
         });
         this.p3 = createPoint(
             areaW,
             0,
-            (val: IVector2D) => {
+            (val: TVector2D) => {
                 updateControl(3, val.x, val.y);
                 update();
             },

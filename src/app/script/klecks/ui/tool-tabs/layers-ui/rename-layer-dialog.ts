@@ -1,7 +1,7 @@
 import { BB } from '../../../../bb/bb';
 import { LANG } from '../../../../language/language';
 import { showModal } from '../../modals/base/showModal';
-import removeLayerImg from '/src/app/img/ui/remove-layer.svg';
+import removeLayerImg from 'url:/src/app/img/ui/remove-layer.svg';
 
 export function renameLayerDialog(
     parentEl: HTMLElement,
@@ -25,6 +25,7 @@ export function renameLayerDialog(
     const input = BB.el({ tagName: 'input' });
     input.value = currentName;
     input.setAttribute('data-ignore-focus', 'true');
+    input.style.flexGrow = '1';
     const clearBtn = BB.el({
         tagName: 'button',
         content: '<img src="' + removeLayerImg + '" height="20"/>',

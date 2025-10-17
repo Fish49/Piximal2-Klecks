@@ -1,7 +1,8 @@
 import { BB } from '../../../bb/bb';
-import { IRect, IVector2D } from '../../../bb/bb-types';
+import { TBounds, TRect, TVector2D } from '../../../bb/bb-types';
 import { KeyListener } from '../../../bb/input/key-listener';
 import { PointerListener } from '../../../bb/input/pointer-listener';
+import { css } from '../../../bb/base/base';
 
 type TUpdateElement = {
     el: HTMLElement;
@@ -19,7 +20,7 @@ export class Cropper {
     private width: number;
     private height: number;
     private scale: number;
-    private readonly grips: IVector2D[]; // aka corner coordinates
+    private readonly grips: TVector2D[]; // aka corner coordinates
     private readonly edges: TUpdateElement[];
     private readonly cornerElArr: TUpdateElement[];
     private readonly darken: TUpdateElement[];
@@ -27,7 +28,7 @@ export class Cropper {
     private readonly thirdsHorizontal: TUpdateElement;
     private readonly thirdsVertical: TUpdateElement;
     private readonly keyListener: KeyListener;
-    private readonly pointerRemainder: IVector2D;
+    private readonly pointerRemainder: TVector2D;
 
     private readonly outlinePointerListener: PointerListener;
 
@@ -41,7 +42,7 @@ export class Cropper {
     private readonly edge2PointerListener: PointerListener;
     private readonly edge3PointerListener: PointerListener;
 
-    private readonly callback: (val: IRect) => void;
+    private readonly callback: (val: TRect) => void;
 
     private update(): void {
         this.edges[0].update();
@@ -68,7 +69,7 @@ export class Cropper {
     }
 
     // ----------------------------------- public -----------------------------------
-    constructor(params: {
+    constructor(p: {
         x: number; // int, pos in relation to image
         y: number; // int
         width: number; // int
@@ -76,23 +77,24 @@ export class Cropper {
         maxW: number;
         maxH: number;
         scale: number; // float, zoom
-        callback: (val: IRect) => void;
+        callback: (val: TRect) => void;
+        init?: TBounds;
     }) {
-        this.x = params.x;
-        this.y = params.y;
-        this.width = params.width;
-        this.height = params.height;
-        this.scale = params.scale;
-        this.callback = params.callback;
+        this.x = p.x;
+        this.y = p.y;
+        this.width = p.width;
+        this.height = p.height;
+        this.scale = p.scale;
+        this.callback = p.callback;
 
-        const maxW = params.maxW;
-        const maxH = params.maxW;
+        const maxW = p.maxW;
+        const maxH = p.maxW;
         this.rootEl = BB.el();
         const gripCursors = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
 
         this.keyListener = new BB.KeyListener({});
 
-        BB.css(this.rootEl, {
+        css(this.rootEl, {
             position: 'absolute',
             left: this.x * this.scale + 'px',
             top: this.y * this.scale + 'px',
@@ -107,7 +109,7 @@ export class Cropper {
                 },
             }),
             update: () => {
-                BB.css(this.outline.el, {
+                css(this.outline.el, {
                     left: this.grips[0].x * this.scale - 1 + 'px',
                     top: this.grips[0].y * this.scale - 1 + 'px',
                     width: (this.grips[2].x - this.grips[0].x) * this.scale + 'px',
@@ -158,7 +160,7 @@ export class Cropper {
                 },
             }),
             update: () => {
-                BB.css(this.thirdsHorizontal.el, {
+                css(this.thirdsHorizontal.el, {
                     left: this.grips[0].x * this.scale + 'px',
                     top:
                         (this.grips[0].y + (this.grips[2].y - this.grips[0].y) / 3) * this.scale +
@@ -178,7 +180,7 @@ export class Cropper {
                 },
             }),
             update: () => {
-                BB.css(this.thirdsVertical.el, {
+                css(this.thirdsVertical.el, {
                     left:
                         (this.grips[0].x + (this.grips[2].x - this.grips[0].x) / 3) * this.scale +
                         'px',
@@ -192,12 +194,21 @@ export class Cropper {
         const gripSize = 40;
         const gripOverlay = 10;
 
-        this.grips = [
-            { x: 0, y: 0 }, // top left
-            { x: this.width, y: 0 }, // top right
-            { x: this.width, y: this.height }, // bottom right
-            { x: 0, y: this.height }, //bottom left
-        ];
+        if (p.init) {
+            this.grips = [
+                { x: p.init.x1, y: p.init.y1 }, // top left
+                { x: p.init.x2, y: p.init.y1 }, // top right
+                { x: p.init.x2, y: p.init.y2 }, // bottom right
+                { x: p.init.x1, y: p.init.y2 }, //bottom left
+            ];
+        } else {
+            this.grips = [
+                { x: 0, y: 0 }, // top left
+                { x: this.width, y: 0 }, // top right
+                { x: this.width, y: this.height }, // bottom right
+                { x: 0, y: this.height }, //bottom left
+            ];
+        }
 
         const transformTop = (dY: number) => {
             this.grips[0].y += dY;
@@ -251,7 +262,7 @@ export class Cropper {
                 const update = () => {
                     if (i === 0) {
                         //top
-                        BB.css(el, {
+                        css(el, {
                             left: this.grips[0].x * this.scale + gripOverlay + 'px',
                             top: this.grips[0].y * this.scale - gripSize * 2 + gripOverlay + 'px',
                             width:
@@ -262,7 +273,7 @@ export class Cropper {
                         });
                     } else if (i === 1) {
                         //right
-                        BB.css(el, {
+                        css(el, {
                             left: this.grips[1].x * this.scale - gripOverlay + 'px',
                             top: this.grips[1].y * this.scale + gripOverlay + 'px',
                             width: gripSize * 2 + 'px',
@@ -273,7 +284,7 @@ export class Cropper {
                         });
                     } else if (i === 2) {
                         //bottom
-                        BB.css(el, {
+                        css(el, {
                             left: this.grips[3].x * this.scale + gripOverlay + 'px',
                             top: this.grips[3].y * this.scale - gripOverlay + 'px',
                             width:
@@ -284,7 +295,7 @@ export class Cropper {
                         });
                     } else if (i === 3) {
                         //left
-                        BB.css(el, {
+                        css(el, {
                             left: this.grips[0].x * this.scale - gripSize * 2 + gripOverlay + 'px',
                             top: this.grips[0].y * this.scale + gripOverlay + 'px',
                             width: gripSize * 2 + 'px',
@@ -317,28 +328,28 @@ export class Cropper {
                 });
                 const update = () => {
                     if (i === 0) {
-                        BB.css(g, {
+                        css(g, {
                             left: this.grips[0].x * this.scale + 'px',
                             top: this.grips[0].y * this.scale - 8000 + 'px',
                             width: (this.grips[1].x - this.grips[0].x) * this.scale + 'px',
                             height: '8000px',
                         });
                     } else if (i === 1) {
-                        BB.css(g, {
+                        css(g, {
                             left: this.grips[1].x * this.scale + 'px',
                             top: this.grips[1].y * this.scale - 8000 + 'px',
                             width: '8000px',
                             height: 16000 + 'px',
                         });
                     } else if (i === 2) {
-                        BB.css(g, {
+                        css(g, {
                             left: this.grips[3].x * this.scale + 'px',
                             top: this.grips[3].y * this.scale + 'px',
                             width: (this.grips[2].x - this.grips[3].x) * this.scale + 'px',
                             height: '8000px',
                         });
                     } else if (i === 3) {
-                        BB.css(g, {
+                        css(g, {
                             left: this.grips[0].x * this.scale - 8000 + 'px',
                             top: this.grips[0].y * this.scale - 8000 + 'px',
                             width: '8000px',
@@ -460,7 +471,7 @@ export class Cropper {
                     const update = () => {
                         if (i === 0) {
                             //top left
-                            BB.css(g, {
+                            css(g, {
                                 left:
                                     this.grips[0].x * this.scale -
                                     gripSize * 2 +
@@ -474,7 +485,7 @@ export class Cropper {
                             });
                         } else if (i === 1) {
                             //top right
-                            BB.css(g, {
+                            css(g, {
                                 left: this.grips[1].x * this.scale - gripOverlay + 'px',
                                 top:
                                     this.grips[1].y * this.scale -
@@ -484,13 +495,13 @@ export class Cropper {
                             });
                         } else if (i === 2) {
                             //bottom right
-                            BB.css(g, {
+                            css(g, {
                                 left: this.grips[1].x * this.scale - gripOverlay + 'px',
                                 top: this.grips[2].y * this.scale - gripOverlay + 'px',
                             });
                         } else if (i === 3) {
                             //bottom left
-                            BB.css(g, {
+                            css(g, {
                                 left:
                                     this.grips[0].x * this.scale -
                                     gripSize * 2 +
@@ -633,7 +644,7 @@ export class Cropper {
     }
 
     // ---- interface ----
-    getTransform(): IRect {
+    getTransform(): TRect {
         this.grips[1].x -= this.grips[0].x;
         this.grips[1].y -= this.grips[0].y;
         this.grips[2].x -= this.grips[0].x;
@@ -652,13 +663,13 @@ export class Cropper {
         };
     }
 
-    setTransform(p: IRect): void {
+    setTransform(p: TRect): void {
         this.x = p.x;
         this.y = p.y;
         this.width = p.width;
         this.height = p.height;
 
-        BB.css(this.rootEl, {
+        css(this.rootEl, {
             left: this.x * this.scale + 'px',
             top: this.y * this.scale + 'px',
         });
@@ -678,7 +689,7 @@ export class Cropper {
 
     setScale(s: number): void {
         this.scale = s;
-        BB.css(this.rootEl, {
+        css(this.rootEl, {
             left: this.x * this.scale + 'px',
             top: this.y * this.scale + 'px',
         });

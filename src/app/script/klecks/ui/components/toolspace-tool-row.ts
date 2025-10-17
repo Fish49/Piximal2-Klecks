@@ -1,12 +1,13 @@
 import { BB } from '../../../bb/bb';
 import { ToolDropdown } from './tool-dropdown';
-import toolHandImg from '/src/app/img/ui/tool-hand.svg';
-import toolZoomInImg from '/src/app/img/ui/tool-zoom-in.svg';
-import toolZoomOutImg from '/src/app/img/ui/tool-zoom-out.svg';
-import toolUndoImg from '/src/app/img/ui/tool-undo.svg';
+import toolHandImg from 'url:/src/app/img/ui/tool-hand.svg';
+import toolZoomInImg from 'url:/src/app/img/ui/tool-zoom-in.svg';
+import toolZoomOutImg from 'url:/src/app/img/ui/tool-zoom-out.svg';
+import toolUndoImg from 'url:/src/app/img/ui/tool-undo.svg';
 import { LANG } from '../../../language/language';
 import { PointerListener } from '../../../bb/input/pointer-listener';
 import { TToolType } from '../../kl-types';
+import { css } from '../../../bb/base/base';
 
 type TBaseToolRowButton = {
     el: HTMLElement;
@@ -133,7 +134,7 @@ export class ToolspaceToolRow {
                 viewBox: '0 0 100 100',
                 preserveAspectRatio: 'none',
             });
-            BB.css(svg, {
+            css(svg, {
                 position: 'absolute',
                 left: '0',
                 top: '0',
@@ -417,7 +418,7 @@ export class ToolspaceToolRow {
     }
 
     setIsSmall(b: boolean): void {
-        BB.css(this.rootEl, {
+        css(this.rootEl, {
             height: b ? '36px' : '54px',
         });
 

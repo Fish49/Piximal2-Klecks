@@ -1,12 +1,12 @@
 import { BB } from '../../bb/bb';
 import { Checkbox } from '../ui/components/checkbox';
 import { Select } from '../ui/components/select';
-import constrainImg from '/src/app/img/ui/constrain.svg';
-import { IFilterApply, IFilterGetDialogParam, TFilterGetDialogResult } from '../kl-types';
+import constrainImg from 'url:/src/app/img/ui/constrain.svg';
+import { TFilterApply, TFilterGetDialogParam, TFilterGetDialogResult } from '../kl-types';
 import { LANG } from '../../language/language';
 import { table } from '../ui/components/table';
-import { theme } from '../../theme/theme';
 import { SMALL_PREVIEW } from '../ui/utils/preview-size';
+import { css } from '../../bb/base/base';
 
 export type TFilterResizeInput = {
     width: number;
@@ -15,7 +15,7 @@ export type TFilterResizeInput = {
 };
 
 export const filterResize = {
-    getDialog(params: IFilterGetDialogParam) {
+    getDialog(params: TFilterGetDialogParam) {
         //BB.centerWithin
         const klCanvas = params.klCanvas;
         if (!klCanvas) {
@@ -120,7 +120,7 @@ export const filterResize = {
                 '0.2': { rowspan: 3 },
             },
         );
-        BB.css(sizeTable, {
+        css(sizeTable, {
             marginBottom: '10px',
         });
 
@@ -149,6 +149,7 @@ export const filterResize = {
                 isConstrained = b;
                 updateConstrain();
             },
+            name: 'constrain-proportions',
         });
         rootEl.append(
             BB.el({
@@ -169,6 +170,7 @@ export const filterResize = {
             onChange: (): void => {
                 update();
             },
+            name: 'interpolation-algorithm',
         });
 
         const secondRowElement = BB.el({
@@ -290,6 +292,8 @@ export const filterResize = {
                 marginTop: '10px',
                 position: 'relative',
                 userSelect: 'none',
+                background: 'var(--kl-checkerboard-background)',
+                backgroundSize: '16px',
             },
         });
 
@@ -305,24 +309,11 @@ export const filterResize = {
             },
         });
 
-        function updateCheckerboard(): void {
-            BB.createCheckerDataUrl(
-                8,
-                function (url) {
-                    previewWrapper.style.background = 'url(' + url + ')';
-                },
-                theme.isDark(),
-            );
-        }
-        theme.addIsDarkListener(updateCheckerboard);
-        updateCheckerboard();
-
         rootEl.append(previewWrapper);
         update();
 
         result.destroy = (): void => {
             constrainCheckbox.destroy();
-            theme.removeIsDarkListener(updateCheckerboard);
         };
         result.getInput = function (): TFilterResizeInput {
             result.destroy!();
@@ -335,7 +326,7 @@ export const filterResize = {
         return result;
     },
 
-    apply(params: IFilterApply<TFilterResizeInput>): boolean {
+    apply(params: TFilterApply<TFilterResizeInput>): boolean {
         const klCanvas = params.klCanvas;
         const width = params.input.width;
         const height = params.input.height;

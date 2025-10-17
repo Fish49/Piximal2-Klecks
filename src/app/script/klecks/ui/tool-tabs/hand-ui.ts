@@ -1,9 +1,11 @@
 import { BB } from '../../../bb/bb';
-import angleImg from '/src/app/img/ui/angle.svg';
-import rotateImg from '/src/app/img/ui/edit-rotate.svg';
+import angleImg from 'url:/src/app/img/ui/angle.svg';
+import rotateImg from 'url:/src/app/img/ui/edit-rotate.svg';
 import { LANG } from '../../../language/language';
 import { Checkbox } from '../components/checkbox';
 import { LocalStorage } from '../../../bb/base/local-storage';
+import { css } from '../../../bb/base/base';
+import { makeUnfocusable } from '../../../bb/base/ui';
 
 const LS_INERTIA_KEY = 'kl-inertia-scroll';
 
@@ -24,13 +26,13 @@ export class HandUi {
         this.scaleEl.innerHTML = Math.round(this.scale * 100) + '%';
         this.angleEl.innerHTML = Math.round(this.angleDeg) + '°';
 
-        this.angleIm.style.transform = 'rotate(' + this.angleDeg + 'deg)';
-        if (this.angleDeg % 90 === 0) {
-            this.angleIm.style.boxShadow =
-                'inset 0 0 0 1px rgba(255,255,255, 1), 0 0 0 1px rgba(0, 0, 0, 0.3)';
-        } else {
-            this.angleIm.style.boxShadow = '';
-        }
+        css(this.angleIm, {
+            transform: 'rotate(' + this.angleDeg + 'deg)',
+            boxShadow:
+                this.angleDeg % 90 === 0
+                    ? 'inset 0 0 0 1px rgba(255,255,255, 1), 0 0 0 1px rgba(0, 0, 0, 0.3)'
+                    : '',
+        });
     }
 
     // ----------------------------------- public -----------------------------------
@@ -82,7 +84,7 @@ export class HandUi {
 
         this.angleIm = new Image();
         this.angleIm.src = angleImg;
-        BB.css(this.angleIm, {
+        css(this.angleIm, {
             verticalAlign: 'bottom',
             width: '20px',
             height: '20px',
@@ -107,7 +109,7 @@ export class HandUi {
             content: LANG('hand-reset'),
             onClick: p.onReset,
         });
-        BB.makeUnfocusable(resetButton);
+        makeUnfocusable(resetButton);
 
         const fitButton = BB.el({
             tagName: 'button',
@@ -117,20 +119,24 @@ export class HandUi {
             },
             onClick: p.onFit,
         });
-        BB.makeUnfocusable(fitButton);
+        makeUnfocusable(fitButton);
         row2.append(resetButton, fitButton);
 
+        const leftRotateIcon = new Image();
+        leftRotateIcon.height = 20;
+        leftRotateIcon.src = rotateImg;
+        leftRotateIcon.alt = 'Rotate';
+        css(leftRotateIcon, {
+            transform: 'scale(-1, 1)',
+        });
         const leftRotateButton = BB.el({
             tagName: 'button',
-            content:
-                '<img height="20" src="' +
-                rotateImg +
-                '" alt="Rotate" style="transform: scale(-1, 1)"/>',
+            content: leftRotateIcon,
             onClick: function () {
                 p.onAngleChange(-15, true);
             },
         });
-        BB.makeUnfocusable(leftRotateButton);
+        makeUnfocusable(leftRotateButton);
 
         const resetAngleButton = BB.el({
             tagName: 'button',
@@ -142,7 +148,7 @@ export class HandUi {
                 p.onAngleChange(0);
             },
         });
-        BB.makeUnfocusable(resetAngleButton);
+        makeUnfocusable(resetAngleButton);
 
         const rightRotateButton = BB.el({
             tagName: 'button',
@@ -154,7 +160,7 @@ export class HandUi {
                 p.onAngleChange(15, true);
             },
         });
-        BB.makeUnfocusable(rightRotateButton);
+        makeUnfocusable(rightRotateButton);
         row3.append(leftRotateButton, resetAngleButton, rightRotateButton);
 
         const inertiaToggle = new Checkbox({
@@ -164,11 +170,12 @@ export class HandUi {
                 LocalStorage.setItem(LS_INERTIA_KEY, '' + b);
                 p.onChangeUseInertiaScrolling(b);
             },
+            name: 'enable-inertia-scrolling',
         });
         setTimeout(() => {
             p.onChangeUseInertiaScrolling(inertiaToggle.getValue());
         }, 500);
-        BB.css(inertiaToggle.getElement(), {
+        css(inertiaToggle.getElement(), {
             marginTop: '10px',
             display: 'inline-block',
         });

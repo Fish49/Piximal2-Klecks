@@ -1,12 +1,14 @@
 import { BB } from '../../bb/bb';
-import { IBounds, IPressureInput, IVector2D } from '../../bb/bb-types';
-import { IRGB } from '../kl-types';
-import { clamp } from '../../bb/math/math';
+import { TBounds, TPressureInput, TVector2D } from '../../bb/bb-types';
+import { TRgb } from '../kl-types';
+import { boundsOverlap, clamp, integerBounds } from '../../bb/math/math';
 import { BezierLine, TBezierLineCallback } from '../../bb/math/line';
 import { KlHistory } from '../history/kl-history';
 import { getPushableLayerChange } from '../history/push-helpers/get-pushable-layer-change';
 import { canvasToLayerTiles } from '../history/push-helpers/canvas-to-layer-tiles';
 import { createArray } from '../../bb/base/base';
+import { getBinaryMask } from '../select-tool/get-binary-mask';
+import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bounds';
 
 // let statCount = 1;
 // let statAcc = 0;
@@ -23,20 +25,20 @@ import { createArray } from '../../bb/base/base';
 
 const CELL_SIZE = 256;
 
-interface ISmudgeParams {
-    aP: IVector2D;
-    bP: IVector2D;
+type TSmudgeParams = {
+    aP: TVector2D;
+    bP: TVector2D;
     size: {
         w: number;
         h: number;
     };
     brush: {
-        center: IVector2D;
+        center: TVector2D;
         size: number;
         opacity: number;
         alphaLock: boolean;
     };
-}
+};
 
 /**
  * determine bounds of smudge
@@ -49,12 +51,12 @@ interface ISmudgeParams {
 function prepSmudge(
     imWidth: number,
     imHeight: number,
-    aP: IVector2D, // top left of source, integers
-    bP: IVector2D, // top left of dest, integers
+    aP: TVector2D, // top left of source, integers
+    bP: TVector2D, // top left of dest, integers
     size: { w: number; h: number }, // size of both rectangles, integers
 ): {
-    aP: IVector2D;
-    bP: IVector2D;
+    aP: TVector2D;
+    bP: TVector2D;
     size: { w: number; h: number };
 } | null {
     if (aP.x === bP.x && aP.y === bP.y) {
@@ -132,7 +134,7 @@ function prepSmudge(
  * @param imageData
  * @param p
  */
-function smudge(imageData: ImageData, p: ISmudgeParams): void {
+function smudge(imageData: ImageData, mask: Uint8Array | undefined, p: TSmudgeParams): void {
     p = BB.copyObj(p);
 
     const cSize = p.brush.size;
@@ -166,6 +168,9 @@ function smudge(imageData: ImageData, p: ISmudgeParams): void {
             1 - p.brush.opacity * (1 - clamp((dist - (cSize - softnessPx)) / softnessPx, 0, 1));
 
         if (fac === 1) {
+            return;
+        }
+        if (mask && (mask[ai / 4] === 0 || mask[bi / 4] === 0)) {
             return;
         }
 
@@ -269,7 +274,7 @@ export class SmudgeBrush {
     private context: CanvasRenderingContext2D = {} as CanvasRenderingContext2D;
     private klHistory: KlHistory = {} as KlHistory;
 
-    private settingColor: IRGB = { r: 0, g: 0, b: 0 };
+    private settingColor: TRgb = { r: 0, g: 0, b: 0 };
     private settingSize: number = 35;
     private settingSpacing: number = 0.20446882736951905;
     private settingOpacity: number = 0.8;
@@ -278,30 +283,37 @@ export class SmudgeBrush {
     private settingLockLayerAlpha: boolean = false;
 
     private lineToolLastDot: number = 0;
-    private lastInput: IPressureInput = { x: 0, y: 0, pressure: 0 };
-    private lastInput2: IPressureInput = { x: 0, y: 0, pressure: 0 };
-    private lastDot: IVector2D | undefined;
+    private lastInput: TPressureInput = { x: 0, y: 0, pressure: 0 };
+    private lastInput2: TPressureInput = { x: 0, y: 0, pressure: 0 };
+    private lastDot: TVector2D | undefined;
 
     private isDrawing: boolean = false;
 
     private bezierLine: BezierLine | undefined;
 
-    private redrawBounds: IBounds | undefined;
-    private completeRedrawBounds: IBounds | undefined;
+    private redrawBounds: TBounds | undefined;
+    private completeRedrawBounds: TBounds | undefined;
 
     private copyImageData: ImageData = {} as ImageData;
 
-    private drawBuffer: ISmudgeParams[] = [];
+    private drawBuffer: TSmudgeParams[] = [];
 
     private copiedCells: boolean[] = [];
+
+    private selectionBounds: TBounds | undefined;
+    private mask: Uint8Array | undefined;
 
     // workaround for https://github.com/microsoft/TypeScript/issues/41654
     private resetRedrawBounds(): void {
         this.redrawBounds = undefined;
     }
 
-    private updateRedrawBounds(bounds: IBounds): void {
-        this.redrawBounds = BB.updateBounds(this.redrawBounds, bounds);
+    private updateRedrawBounds(bounds: TBounds): void {
+        const boundsWithinSelection = boundsOverlap(bounds, this.selectionBounds);
+        if (!boundsWithinSelection) {
+            return;
+        }
+        this.redrawBounds = BB.updateBounds(this.redrawBounds, boundsWithinSelection);
     }
 
     private updateCompleteRedrawBounds(x1: number, y1: number, x2: number, y2: number): void {
@@ -319,7 +331,7 @@ export class SmudgeBrush {
     copyFromCanvas(): void {
         const touchedCells = this.copiedCells.map(() => false);
 
-        const bounds: IBounds[] = [];
+        const bounds: TBounds[] = [];
         const cellsW = Math.ceil(this.copyImageData.width / CELL_SIZE);
 
         if (!this.redrawBounds) {
@@ -417,7 +429,7 @@ export class SmudgeBrush {
         );
 
         if (bounds) {
-            const params: ISmudgeParams = {
+            const params: TSmudgeParams = {
                 aP: bounds.aP,
                 bP: bounds.bP,
                 size: bounds.size,
@@ -486,7 +498,7 @@ export class SmudgeBrush {
         this.copyFromCanvas();
 
         for (let i = 0; i < this.drawBuffer.length; i++) {
-            smudge(this.copyImageData, this.drawBuffer[i]);
+            smudge(this.copyImageData, this.mask, this.drawBuffer[i]);
         }
     }
 
@@ -495,6 +507,11 @@ export class SmudgeBrush {
     constructor() {}
 
     startLine(x: number, y: number, p: number): void {
+        const selection = this.klHistory.getComposed().selection.value;
+        this.selectionBounds = selection ? integerBounds(getMultiPolyBounds(selection)) : undefined;
+        this.mask = selection
+            ? getBinaryMask(selection, this.context.canvas.width, this.context.canvas.height)
+            : undefined;
         p = BB.clamp(p, 0, 1);
         const localOpacity = this.settingHasOpacityPressure
             ? this.settingOpacity * p * p
@@ -543,8 +560,8 @@ export class SmudgeBrush {
                 0,
                 this.redrawBounds.x1,
                 this.redrawBounds.y1,
-                this.redrawBounds.x2 - this.redrawBounds.x1 - 1,
-                this.redrawBounds.y2 - this.redrawBounds.y1 - 1,
+                this.redrawBounds.x2 - this.redrawBounds.x1,
+                this.redrawBounds.y2 - this.redrawBounds.y1,
             );
             this.updateCompleteRedrawBounds(
                 this.redrawBounds.x1,
@@ -579,8 +596,8 @@ export class SmudgeBrush {
                 0,
                 this.redrawBounds.x1,
                 this.redrawBounds.y1,
-                this.redrawBounds.x2 - this.redrawBounds.x1 - 1,
-                this.redrawBounds.y2 - this.redrawBounds.y1 - 1,
+                this.redrawBounds.x2 - this.redrawBounds.x1,
+                this.redrawBounds.y2 - this.redrawBounds.y1,
             );
             this.updateCompleteRedrawBounds(
                 this.redrawBounds.x1,
@@ -646,7 +663,7 @@ export class SmudgeBrush {
         return this.isDrawing;
     }
 
-    setColor(c: IRGB): void {
+    setColor(c: TRgb): void {
         if (
             this.settingColor.r === c.r &&
             this.settingColor.g === c.g &&

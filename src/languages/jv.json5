@@ -79,6 +79,10 @@
     original: 'More Tools',
     value: 'Piranti Liyane'
   },
+  'tool-more-tools-click-again': {
+    original: 'Click again for more tools',
+    value: ''
+  },
   undo: {
     original: 'Undo',
     value: 'Batalaken'
@@ -470,11 +474,6 @@
     original: 'Browser Storage',
     value: 'Panyimpenan Browser'
   },
-  'file-storage-thumb-title': {
-    hint: 'when reopening or reloading',
-    original: 'Restores when reopening page',
-    value: 'Mulihake nalika mbukak maneh kaca'
-  },
   'file-storage-about': {
     hint: 'link to Browser Storage help/user manual',
     original: 'About Browser Storage',
@@ -482,8 +481,8 @@
   },
   'file-storage-cant-access': {
     hint: 'an error. Can’t access the storage.',
-    original: "Can't access",
-    value: 'Ora bisa ngakses'
+    original: "Can't access storage.",
+    value: 'Ora bisa ngakses panyimpenan.'
   },
   'file-storage-empty': {
     hint: 'nothing stored',
@@ -495,13 +494,26 @@
     original: 'Store',
     value: 'Nyimpen'
   },
+  'file-storage-open': {
+    hint: 'verb. to open, or to load',
+    original: 'Open',
+    value: 'Mbukak'
+  },
+  'file-storage-open-confirmation': {
+    original: 'This image is already open in another tab. Open it here too?',
+    value: 'Gambar iki wis mbukak ing tab liyane. Bukak kene uga?'
+  },
+  'file-storage-open-failed': {
+    original: 'Failed to load.',
+    value: 'Gagal mbukak.'
+  },
   'file-storage-clear': {
     original: 'Clear',
     value: 'Cetha'
   },
   'file-storage-clear-prompt': {
-    original: 'Clear Browser Storage?',
-    value: 'Mbusak Panyimpenan Browser?'
+    original: 'Clear Browser Storage? Clearing can not be undone.',
+    value: 'Mbusak Panyimpenan Browser? Mbusak ora bisa dibatalake.'
   },
   'file-storage-storing': {
     hint: 'while it is in the process of storing',
@@ -512,6 +524,10 @@
     hint: 'overwrite what is already stored',
     original: 'Overwrite',
     value: 'Nimpa'
+  },
+  'file-storage-overwrite-confirm': {
+    original: 'Overwrite Browser Storage? Overwritten data will be permanently deleted.',
+    value: 'Nimpa Panyimpenan Browser? Data sing ditumpuk bakal dibusak kanthi permanen.'
   },
   'file-storage-min-ago': {
     hint: "{x} <- needs to stay, it's a placeholder.",
@@ -567,6 +583,43 @@
     hint: 'verb',
     original: 'Upload',
     value: 'Unggahan'
+  },
+  'tab-recovery-recover-tabs': {
+    hint: 'allows user to recover browser tabs (including the drawing) of this app.',
+    original: 'Recover closed tabs',
+    value: 'Waras tab sing ditutup'
+  },
+  'tab-recovery-explanation': {
+    original: 'Recovery data is only kept for a little while. Save to ensure your work is not lost.',
+    value: 'Data recovery mung disimpen kanggo sawetara wektu. Simpen kanggo mesthekake karya sampeyan ora ilang.'
+  },
+  'tab-recovery-total-quota-label': {
+    original: 'Total:',
+    value: 'Total'
+  },
+  'tab-recovery-empty': {
+    original: 'Nothing to recover.',
+    value: 'Ora ana sing bisa pulih.'
+  },
+  'tab-recovery-recover': {
+    original: 'Recover',
+    value: 'Waras'
+  },
+  'tab-recovery-delete': {
+    original: 'Delete',
+    value: 'Mbusak'
+  },
+  'tab-recovery-delete-confirmation': {
+    original: 'Delete this recovery? Deletion can not be undone.',
+    value: 'Mbusak pemulihan iki? Pambusakan ora bisa dibatalake.'
+  },
+  'tab-recovery-failed-to-recover': {
+    original: 'Failed to recover tab.',
+    value: 'Gagal mbalekake tab.'
+  },
+  'tab-recovery-recovered': {
+    original: 'Tab recovered.',
+    value: 'Tab mbalekake.'
   },
   'cleared-layer': {
     hint: 'the layer has been cleared. It is now empty',
@@ -698,6 +751,10 @@
     hint: 'Cropping is a common feature in image editing.',
     original: 'Crop',
     value: 'Potong'
+  },
+  'cropcopy-mask': {
+    original: 'Mask unselected',
+    value: ''
   },
   'cropcopy-click-hold': {
     original: 'Right-click or press hold to copy.',
@@ -879,6 +936,11 @@
     hint: 'nothing on the layer, just transparency',
     original: 'Layer is empty.',
     value: 'Lapisan kosong'
+  },
+  'filter-transform-empty-selection': {
+    hint: 'nothing on the layer, in selected area (via select tool), just transparency',
+    original: 'Layer is empty in selected area.',
+    value: ''
   },
   'filter-transform-title': {
     hint: 'same as the button, but can be longer',
@@ -1377,6 +1439,14 @@
     original: 'Bold',
     value: 'Kandel'
   },
+  'text-failed-import': {
+    original: 'Failed to import the following files:',
+    value: ''
+  },
+  'text-supported-formats': {
+    original: 'Supported formats:',
+    value: ''
+  },
   'select-select': {
     original: 'Select',
     value: 'Pilih'
@@ -1496,10 +1566,6 @@
     hint: 'The app is loaded, but it’s still waiting for image',
     original: 'Waiting for image',
     value: 'Nunggu gambar'
-  },
-  unsaved: {
-    original: 'Unsaved',
-    value: 'Ora disimpen'
   },
   help: {
     hint: 'or user manual',

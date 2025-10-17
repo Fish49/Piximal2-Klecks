@@ -5,15 +5,16 @@ import { Checkbox } from '../components/checkbox';
 import { Options } from '../components/options';
 import { TGradientType } from '../../kl-types';
 import { KlColorSlider } from '../components/kl-color-slider';
+import { css } from '../../../bb/base/base';
 
-interface IGradientUiSettings {
+type TGradientUiSettings = {
     opacity: number;
     type: TGradientType;
     doLockAlpha: boolean;
     doSnap: boolean;
     isReversed: boolean;
     isEraser: boolean;
-}
+};
 
 /**
  * Gradient Tool tab contents
@@ -28,7 +29,7 @@ export class GradientUi {
     private isVisible: boolean;
     private readonly iconArr: HTMLElement[];
 
-    private settings: IGradientUiSettings = {
+    private settings: TGradientUiSettings = {
         opacity: 1,
         type: 'linear',
         doLockAlpha: false,
@@ -121,7 +122,7 @@ export class GradientUi {
                 this.settings.opacity = val;
             },
         });
-        BB.css(opacitySlider.getElement(), {
+        css(opacitySlider.getElement(), {
             marginTop: '10px',
         });
         this.rootEl.append(opacitySlider.getElement());
@@ -145,6 +146,7 @@ export class GradientUi {
             css: {
                 width: '50%',
             },
+            name: 'reverse-gradient',
         });
 
         const doSnapToggle = new Checkbox({
@@ -157,6 +159,7 @@ export class GradientUi {
             css: {
                 width: '50%',
             },
+            name: 'enable-snapping',
         });
 
         row1.append(reverseToggle.getElement(), doSnapToggle.getElement());
@@ -179,6 +182,7 @@ export class GradientUi {
             css: {
                 width: '50%',
             },
+            name: 'enable-eraser',
         });
 
         const lockAlphaToggle = new Checkbox({
@@ -192,6 +196,7 @@ export class GradientUi {
             css: {
                 width: '50%',
             },
+            name: 'enable-alpha-lock',
         });
 
         row2.append(eraserToggle.getElement(), lockAlphaToggle.getElement());
@@ -212,7 +217,7 @@ export class GradientUi {
         }
     }
 
-    getSettings(): IGradientUiSettings {
+    getSettings(): TGradientUiSettings {
         return BB.copyObj(this.settings);
     }
 }

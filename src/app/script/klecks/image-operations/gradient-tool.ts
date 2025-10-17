@@ -1,4 +1,4 @@
-import { IGradient, IRGBA } from '../kl-types';
+import { TGradient, TRgba } from '../kl-types';
 import { BB } from '../../bb/bb';
 
 type TOnGradient = (
@@ -41,8 +41,13 @@ export class GradientTool {
     }
 }
 
-export function drawGradient(ctx: CanvasRenderingContext2D, gradientObj: IGradient): void {
+export function drawGradient(
+    ctx: CanvasRenderingContext2D,
+    gradientObj: TGradient,
+    selectionPath?: Path2D,
+): void {
     ctx.save();
+    selectionPath && ctx.clip(selectionPath);
 
     const x1 = gradientObj.x1;
     const y1 = gradientObj.y1;
@@ -81,11 +86,11 @@ export function drawGradient(ctx: CanvasRenderingContext2D, gradientObj: IGradie
     if (gradientObj.isEraser && gradientObj.doLockAlpha) {
         baseColor = { r: 255, g: 255, b: 255 };
     }
-    let color1: IRGBA = {
+    let color1: TRgba = {
         ...baseColor,
         a: gradientObj.opacity,
     };
-    let color2: IRGBA = {
+    let color2: TRgba = {
         ...baseColor,
         a: 0,
     };

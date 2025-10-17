@@ -4,7 +4,6 @@ import { Options } from '../../components/options';
 import { translateBlending } from '../../../canvas/translate-blending';
 import { showModal } from '../../modals/base/showModal';
 import { TMixMode } from '../../../kl-types';
-import { theme } from '../../../../theme/theme';
 
 export function mergeLayerDialog(
     parentEl: HTMLElement,
@@ -35,8 +34,10 @@ export function mergeLayerDialog(
             update();
         },
         isSmall: true,
+        css: {
+            marginTop: '5px',
+        },
     });
-    options.getElement().style.marginTop = '5px';
     div.append(options.getElement());
 
     const thumbDimensions = BB.fitInto(p.topCanvas.width, p.topCanvas.height, 200, 200, 1);
@@ -50,18 +51,6 @@ export function mergeLayerDialog(
         },
     });
     div.append(spacer, preview);
-
-    function updateCheckerboard(): void {
-        BB.createCheckerDataUrl(
-            4,
-            (url) => {
-                preview.style.backgroundImage = 'url(' + url + ')';
-            },
-            theme.isDark(),
-        );
-    }
-    updateCheckerboard();
-    theme.addIsDarkListener(updateCheckerboard);
 
     const alphaCanvas = BB.copyCanvas(preview);
     BB.ctx(alphaCanvas).drawImage(p.topCanvas, 0, 0, alphaCanvas.width, alphaCanvas.height);
@@ -110,7 +99,6 @@ export function mergeLayerDialog(
         callback: (val) => {
             keyListener.destroy();
             options.destroy();
-            theme.removeIsDarkListener(updateCheckerboard);
             if (val === 'Ok') {
                 p.callback(options.getValue());
             }

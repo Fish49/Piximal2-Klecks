@@ -5,6 +5,7 @@ import { Checkbox } from '../components/checkbox';
 import { LANG } from '../../../language/language';
 import { TFillSampling } from '../../kl-types';
 import { KlColorSlider } from '../components/kl-color-slider';
+import { css } from '../../../bb/base/base';
 
 /**
  * Paint Bucket tab contents (color slider, opacity slider, etc)
@@ -64,7 +65,7 @@ export class FillUi {
             toValue: (displayValue) => displayValue * (255 / 100),
             toDisplayValue: (value) => value / (255 / 100),
         });
-        BB.css(this.toleranceSlider.getElement(), {
+        css(this.toleranceSlider.getElement(), {
             marginTop: '10px',
         });
         this.rootEl.append(this.toleranceSlider.getElement());
@@ -91,6 +92,7 @@ export class FillUi {
                 ['above', LANG('bucket-sample-above')],
             ],
             initValue: 'all',
+            name: 'sampling-mode',
         });
         const modePointerListener = new BB.PointerListener({
             target: this.modeSelect.getElement(),
@@ -121,6 +123,7 @@ export class FillUi {
                 ['7', '7'],
             ],
             initValue: '0',
+            name: 'fill-growth',
         });
         const growPointerListener = new BB.PointerListener({
             target: this.growSelect.getElement(),
@@ -139,21 +142,13 @@ export class FillUi {
             callback: (b) => {
                 this.isContiguous = b;
             },
-            css: {
-                paddingRight: '5px',
-                display: 'inline-block',
-                width: '50%',
-            },
+            name: 'is-contiguous',
         });
 
         this.eraserToggle = new Checkbox({
             init: false,
             label: LANG('eraser'),
-            css: {
-                paddingRight: '5px',
-                display: 'inline-block',
-                width: '50%',
-            },
+            name: 'eraser-toggle',
         });
 
         this.rootEl.append(
@@ -162,6 +157,7 @@ export class FillUi {
                 css: {
                     display: 'flex',
                     marginTop: '10px',
+                    gap: '10px',
                 },
             }),
         );
