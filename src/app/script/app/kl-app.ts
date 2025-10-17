@@ -1463,6 +1463,24 @@ export class KlApp {
             klHistory: klHistory,
         });
 
+        const piximal2Ui = new KL.Piximal2Ui({
+            klRootEl: this.klRootEl,
+            klColorSlider: this.klColorSlider,
+            layersUi: this.layersUi,
+            getCurrentColor: () => currentColor,
+            maxCanvasSize,
+            klCanvas: this.klCanvas,
+            getCurrentLayer: () => currentLayer,
+            isEmbed: !!this.embed,
+            statusOverlay: this.statusOverlay,
+            onCanvasChanged: () => {
+                this.easelProjectUpdater.update();
+                this.easel.resetOrFitTransform(true);
+            },
+            applyUncommitted: () => applyUncommitted(),
+            klHistory: klHistory,
+        })
+
         const klHistoryExecutor = new KlHistoryExecutor({
             klHistory: klHistory,
             tempHistory,
@@ -1765,6 +1783,19 @@ export class KlApp {
                         }
                         fileUi.getElement().style.display = 'none';
                         fileUi.setIsVisible(false);
+                    },
+                    css: {
+                        padding: '0 7px',
+                    },
+                },
+                {
+                    id: 'piximal2',
+                    label: LANG('piximal2'),
+                    onOpen: () => {
+                        piximal2Ui.show();
+                    },
+                    onClose: () => {
+                        piximal2Ui.hide();
                     },
                     css: {
                         padding: '0 7px',

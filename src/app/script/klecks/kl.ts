@@ -67,6 +67,7 @@ import { SettingsUi } from './ui/tool-tabs/settings-ui';
 import { ToolspaceScroller } from './ui/components/toolspace-scroller';
 import { GradientUi } from './ui/tool-tabs/gradient-ui';
 import { drawGradient, GradientTool } from './image-operations/gradient-tool';
+import { Piximal2Ui } from './ui/tool-tabs/piximal2-ui';
 
 /**
  * paint tool functionality
@@ -159,6 +160,7 @@ export const KL = {
     ShapeUi,
     FileUi,
     FilterUi,
+    Piximal2Ui,
     SettingsUi,
     LayersUi,
 };
