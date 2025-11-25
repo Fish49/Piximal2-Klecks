@@ -81,6 +81,7 @@ import { requestPersistentStorage } from '../klecks/storage/request-persistent-s
 import { CrossTabChannel } from '../bb/base/cross-tab-channel';
 import { MobileColorUi } from '../klecks/ui/mobile/mobile-color-ui';
 import { getSelectionPath2d } from '../bb/multi-polygon/get-selection-path-2d';
+import { Piximal2 } from '../klecks/piximal2/piximal2';
 
 importFilters();
 
@@ -102,7 +103,7 @@ export type TKlAppParams = {
     klRecoveryManager?: KlRecoveryManager; // undefined if IndexedDB fails connecting
 };
 
-type TKlAppToolId =
+export type TKlAppToolId =
     | 'hand'
     | 'brush'
     | 'select'
@@ -145,6 +146,7 @@ export class KlApp {
     private readonly unloadWarningTrigger: UnloadWarningTrigger | undefined;
     private lastSavedHistoryIndex: number = 0;
     private readonly klHistory: KlHistory;
+    private readonly piximal2: Piximal2;
 
     private updateLastSaved(): void {
         this.lastSavedHistoryIndex = this.klHistory.getTotalIndex();
@@ -765,6 +767,7 @@ export class KlApp {
                 redo(true);
             },
         });
+        this.piximal2 = new Piximal2(this.easel);
         css(this.easel.getElement(), {
             position: 'absolute',
             left: '0',
@@ -1314,6 +1317,7 @@ export class KlApp {
             currentBrushUi = brushUiMap[brushId];
             currentBrushUi.setColor(currentColor);
             currentBrushUi.setLayer(currentLayer);
+            this.piximal2.setContext(currentLayer.context);
             this.easelBrush.setBrush({
                 type: currentBrushId === 'pixelBrush' ? 'pixel-square' : 'round',
             });
@@ -1324,6 +1328,7 @@ export class KlApp {
         const setCurrentLayer = (layer: TKlCanvasLayer) => {
             currentLayer = layer;
             currentBrushUi.setLayer(currentLayer);
+            this.piximal2.setContext(currentLayer.context);
             this.layerPreview.setLayer(currentLayer);
         };
 
@@ -1575,7 +1580,7 @@ export class KlApp {
         });
 
         const piximal2Ui = new KL.Piximal2Ui({
-            klRootEl: this.klRootEl,
+            klRootEl: this.rootEl,
             klColorSlider: this.klColorSlider,
             layersUi: this.layersUi,
             getCurrentColor: () => currentColor,
@@ -1589,7 +1594,13 @@ export class KlApp {
                 this.easel.resetOrFitTransform(true);
             },
             applyUncommitted: () => applyUncommitted(),
-            klHistory: klHistory,
+            klHistory: this.klHistory,
+            onCopyToClipboard: () => {
+                applyUncommitted();
+                copyToClipboard(false, false);
+            },
+            onPaste: () => importHandler.readClipboard(),
+            piximal2: this.piximal2
         })
 
         const klHistoryExecutor = new KlHistoryExecutor({
@@ -2041,6 +2052,7 @@ export class KlApp {
                 {
                     id: 'piximal2',
                     label: LANG('piximal2'),
+                    isVisible: !!piximal2Ui,
                     onOpen: () => {
                         piximal2Ui.show();
                     },
@@ -2102,6 +2114,7 @@ export class KlApp {
             this.layersUi.getElement(),
             editUi.getElement(),
             fileUi ? fileUi.getElement() : undefined,
+            piximal2Ui.getElement(),
             settingsUi.getElement(),
             BB.el({
                 css: {

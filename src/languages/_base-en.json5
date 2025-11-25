@@ -1076,5 +1076,9 @@ Renaming a key across multiple language files:
   "wip": 'Work in progress',
   "browser-zoom-help": "Double-tap or pinch-out to reset browser zoom.",
   "dismiss": "Dismiss",
-  "piximal2": "P2"
+  "piximal2": "P2",
+  "piximal2-step": "Step",
+  "piximal2-compile": "Compile",
+  "piximal2-run": "Run",
+  "piximal2-stop": "Stop"
 }

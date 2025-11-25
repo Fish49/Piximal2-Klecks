@@ -30,3 +30,12 @@ declare module '*.woff2' {
     const path: string;
     export default path;
 }
+declare module "*.txt" {
+    const contents: string;
+    export default contents;
+}
+
+declare module "*.ohm" {
+    const contents: string;
+    export default contents;
+}

@@ -118,3 +118,9 @@ Klecks and Kleki are community funded. [Donate today](https://kleki.com/donate/)
 
 bitbof © 2025 - Released under the MIT License. Icons by bitbof are public domain (excluding the Klecks logo, bitbof logo).
 While Kleki and Klecks are jointly developed, Kleki's license is separate from Klecks. Kleki must be licensed from bitbof.
+
+# Piximal 2
+
+Klecks is a beautiful and open source project, and I (PaiShoFish49) have taken it and brutely tacked on Piximal 2. Piximal 2 is the successor of Piximal 1. Piximal (both 1 and 2) are programming languages written in color as opposed to words. I have been using Kleki nearly every day for several years, so I jumped at the opportunity to use its source code for my own project. Piximal 2 on Klecks uses the MIT license as well so dive into my ugly code if you dare. Maybe I'll work on this project more in the future, maybe I'll implement Piximal 1 or make the P2 tab more beautiful or add more features or something. There are a lot of bugs, especially related to the fact that running Piximal 2 programs doesn't use Klecks' history system. Maybe I'll fix that someday. to learn more about Piximal 2, you can refer to `spec.md`.
+
+Disclaimer: Piximal 2 is my passion project. I really hope you like it, and definitely feel free to give feedback or make suggestions or anything like that, but at the end of the day, I do have other things begging for my attention. Do not be surprised when my code is buggy or unreadable or downright gross (Though like I said, feel free to leave feedback, or edit the code! I am happy to accept contributions!).

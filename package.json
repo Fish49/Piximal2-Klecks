@@ -29,5 +29,10 @@
     "parcel": "2.16.0",
     "polygon-clipping": "0.15.7",
     "transformation-matrix": "3.1.0"
+  },
+  "devDependencies": {
+    "@parcel/transformer-inline-string": "^2.16.0",
+    "process": "^0.11.10",
+    "util": "^0.12.5"
   }
 }

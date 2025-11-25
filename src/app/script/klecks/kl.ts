@@ -148,6 +148,7 @@ export const KL = {
     ShapeUi,
     FileUi,
     EditUi,
+    Piximal2Ui,
     SettingsUi,
     LayersUi,
 };
