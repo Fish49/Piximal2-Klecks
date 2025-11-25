@@ -19,8 +19,10 @@ import mergeLayerImg from 'url:/src/app/img/ui/merge-layers.svg';
 import removeLayerImg from 'url:/src/app/img/ui/remove-layer.svg';
 import renameLayerImg from 'url:/src/app/img/ui/rename-layer.svg';
 import caretDownImg from 'url:/src/app/img/ui/caret-down.svg';
+import mergeMovedImage from 'url:/src/app/img/merge-moved.png';
 import { KlHistory } from '../../../history/kl-history';
 import { makeUnfocusable } from '../../../../bb/base/ui';
+import { KL } from '../../../kl';
 
 const paddingLeft = 25;
 
@@ -40,7 +42,7 @@ type TLayerEl = HTMLElement & {
 
 export type TLayersUiParams = {
     klCanvas: KlCanvas;
-    onSelect: (layerIndex: number) => void;
+    onSelect: (layerIndex: number, pushHistory: boolean) => void;
     parentEl: HTMLElement;
     uiState: TUiLayout;
     applyUncommitted: () => void;
@@ -52,7 +54,7 @@ export type TLayersUiParams = {
 export class LayersUi {
     // from params
     private klCanvas: KlCanvas;
-    private readonly onSelect: (layerIndex: number) => void;
+    private readonly onSelect: (layerIndex: number, pushHistory: boolean) => void;
     private readonly parentEl: HTMLElement;
     private uiState: TUiLayout;
     private readonly applyUncommitted: () => void;
@@ -74,7 +76,7 @@ export class LayersUi {
     private readonly addBtn: HTMLButtonElement;
     private readonly duplicateBtn: HTMLButtonElement;
     private readonly mergeBtn: HTMLButtonElement;
-    private readonly moreDropdown: DropdownMenu<'clear-layer' | 'merge-all'>;
+    private readonly moreDropdown: DropdownMenu<'clear-layer' | 'advanced-merge' | 'merge-all'>;
     private readonly modeSelect: Select<TMixMode>;
     private readonly largeThumbDiv: HTMLElement;
     private oldHistoryState: number | undefined;
@@ -163,9 +165,7 @@ export class LayersUi {
             }
             this.klCanvas.renameLayer(layerSpot, newName);
             //this.createLayerList();
-            this.klHistory.pause(true);
-            this.onSelect(layerSpot);
-            this.klHistory.pause(false);
+            this.onSelect(layerSpot, false);
         });
     }
 
@@ -246,9 +246,7 @@ export class LayersUi {
                     this.klCanvas.setLayerIsVisible(layer.spot, check.checked);
                     //this.createLayerList();
                     if (layer.spot === this.selectedSpotIndex) {
-                        this.klHistory.pause(true);
-                        this.onSelect(this.selectedSpotIndex);
-                        this.klHistory.pause(false);
+                        this.onSelect(this.selectedSpotIndex, false);
                     }
                 };
                 // prevent layer getting dragged
@@ -488,13 +486,11 @@ export class LayersUi {
                     const oldSpot = layer.spot;
                     this.move(layer.spot, newSpot);
                     if (oldSpot != newSpot) {
-                        this.klHistory.pause(true);
-                        this.onSelect(this.selectedSpotIndex);
-                        this.klHistory.pause(false);
+                        this.onSelect(this.selectedSpotIndex, false);
                     }
                     if (oldSpot === newSpot && freshSelection) {
                         this.applyUncommitted();
-                        this.onSelect(this.selectedSpotIndex);
+                        this.onSelect(this.selectedSpotIndex, true);
                     }
                     freshSelection = false;
                 }
@@ -529,6 +525,7 @@ export class LayersUi {
         this.removeBtn.disabled = oneLayer;
         this.duplicateBtn.disabled = maxReached;
         this.mergeBtn.disabled = this.selectedSpotIndex === 0;
+        this.moreDropdown.setEnabled('advanced-merge', !oneLayer);
         this.moreDropdown.setEnabled('merge-all', !oneLayer);
     }
 
@@ -612,12 +609,40 @@ export class LayersUi {
             buttonTitle: LANG('more'),
             items: [
                 ['clear-layer', LANG('layers-clear')],
+                ['advanced-merge', LANG('layers-merge-advanced')],
                 ['merge-all', LANG('layers-merge-all')],
             ],
             onItemClick: (id) => {
                 if (id === 'clear-layer') {
                     this.applyUncommitted();
                     this.onClearLayer();
+                }
+                if (id === 'advanced-merge') {
+                    this.applyUncommitted();
+                    if (this.selectedSpotIndex <= 0) {
+                        return;
+                    }
+                    mergeLayerDialog(this.parentEl, {
+                        topCanvas: this.klCanvasLayerArr[this.selectedSpotIndex].context.canvas,
+                        bottomCanvas:
+                            this.klCanvasLayerArr[this.selectedSpotIndex - 1].context.canvas,
+                        topOpacity: this.klCanvas.getLayerOld(this.selectedSpotIndex)!.opacity,
+                        mixModeStr: this.klCanvasLayerArr[this.selectedSpotIndex].mixModeStr,
+                        callback: (mode) => {
+                            this.klCanvas.mergeLayers(
+                                this.selectedSpotIndex,
+                                this.selectedSpotIndex - 1,
+                                mode as TMixMode | 'as-alpha',
+                            );
+                            this.klCanvasLayerArr = this.klCanvas.getLayers();
+                            this.selectedSpotIndex--;
+
+                            //this.createLayerList();
+                            this.onSelect(this.selectedSpotIndex, false);
+
+                            this.updateButtons();
+                        },
+                    });
                 }
                 if (id === 'merge-all') {
                     this.applyUncommitted();
@@ -629,9 +654,7 @@ export class LayersUi {
                     this.selectedSpotIndex = newIndex;
 
                     //this.createLayerList();
-                    this.klHistory.pause(true);
-                    this.onSelect(this.selectedSpotIndex);
-                    this.klHistory.pause(false);
+                    this.onSelect(this.selectedSpotIndex, false);
 
                     this.updateButtons();
                 }
@@ -681,6 +704,26 @@ export class LayersUi {
                         this.removeBtn,
                         this.duplicateBtn,
                         this.mergeBtn,
+                        c(
+                            {
+                                className: 'kl-info-btn',
+                                onClick: () => {
+                                    KL.popup({
+                                        target: document.body,
+                                        message:
+                                            'Advanced merge dialog moved to: <br> More > Advanced Merge<br><br><img src="' +
+                                            mergeMovedImage +
+                                            '">',
+                                    });
+                                },
+                                noRef: true,
+                                css: {
+                                    marginTop: '5px',
+                                    fontWeight: 'normal',
+                                },
+                            },
+                            'i',
+                        ),
                         renameBtn,
                         c(',grow-1'),
                         this.moreDropdown.getElement(),
@@ -696,9 +739,7 @@ export class LayersUi {
 
                     this.selectedSpotIndex = this.selectedSpotIndex + 1;
                     //this.createLayerList();
-                    this.klHistory.pause(true);
-                    this.onSelect(this.selectedSpotIndex);
-                    this.klHistory.pause(false);
+                    this.onSelect(this.selectedSpotIndex, false);
 
                     this.updateButtons();
                 };
@@ -711,9 +752,7 @@ export class LayersUi {
 
                     this.selectedSpotIndex++;
                     //this.createLayerList();
-                    this.klHistory.pause(true);
-                    this.onSelect(this.selectedSpotIndex);
-                    this.klHistory.pause(false);
+                    this.onSelect(this.selectedSpotIndex, false);
 
                     this.updateButtons();
                 };
@@ -729,40 +768,21 @@ export class LayersUi {
                     }
                     this.klCanvasLayerArr = this.klCanvas.getLayers();
                     //this.createLayerList();
-                    this.klHistory.pause(true);
-                    this.onSelect(this.selectedSpotIndex);
-                    this.klHistory.pause(false);
+                    this.onSelect(this.selectedSpotIndex, false);
 
                     this.updateButtons();
                 };
                 this.mergeBtn.onclick = () => {
+                    // fast merge
                     this.applyUncommitted();
                     if (this.selectedSpotIndex <= 0) {
                         return;
                     }
-                    mergeLayerDialog(this.parentEl, {
-                        topCanvas: this.klCanvasLayerArr[this.selectedSpotIndex].context.canvas,
-                        bottomCanvas:
-                            this.klCanvasLayerArr[this.selectedSpotIndex - 1].context.canvas,
-                        topOpacity: this.klCanvas.getLayerOld(this.selectedSpotIndex)!.opacity,
-                        mixModeStr: this.klCanvasLayerArr[this.selectedSpotIndex].mixModeStr,
-                        callback: (mode) => {
-                            this.klCanvas.mergeLayers(
-                                this.selectedSpotIndex,
-                                this.selectedSpotIndex - 1,
-                                mode as TMixMode | 'as-alpha',
-                            );
-                            this.klCanvasLayerArr = this.klCanvas.getLayers();
-                            this.selectedSpotIndex--;
-
-                            //this.createLayerList();
-                            this.klHistory.pause(true);
-                            this.onSelect(this.selectedSpotIndex);
-                            this.klHistory.pause(false);
-
-                            this.updateButtons();
-                        },
-                    });
+                    this.klCanvas.mergeLayers(this.selectedSpotIndex, this.selectedSpotIndex - 1);
+                    this.klCanvasLayerArr = this.klCanvas.getLayers();
+                    this.selectedSpotIndex--;
+                    this.onSelect(this.selectedSpotIndex, false);
+                    this.updateButtons();
                 };
 
                 renameBtn.onclick = () => {
