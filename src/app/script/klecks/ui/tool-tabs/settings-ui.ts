@@ -3,6 +3,8 @@ import { LANG, LANGUAGE_STRINGS, LS_LANGUAGE_KEY } from '../../../language/langu
 import { KL } from '../../kl';
 import { languages } from '../../../../languages/languages';
 import bitbofLogoImg from 'url:/src/app/img/bitbof-logo.svg';
+import PaiShoFish49LogoImg from "url:/src/app/img/paishofish49-logo.png";
+import piximal2LogoImg from "url:/src/app/img/piximal2-logo.png";
 import klecksLogoImg from 'url:/src/app/img/klecks-logo.png';
 import uiSwapImg from 'url:/src/app/img/ui/ui-swap-lr.svg';
 import { LocalStorage } from '../../../bb/base/local-storage';
@@ -248,6 +250,28 @@ export class SettingsUi {
                             }),
                             ' © 2025',
                             BB.el({ tagName: 'br' }),
+                            BB.el({ className: 'grid-hr', css: { margin: '10px 0' } }),
+                            createImage({
+                                alt: 'icon',
+                                height: 20,
+                                src: PaiShoFish49LogoImg,
+                                css: {
+                                    verticalAlign: 'middle',
+                                    clipPath: "circle(10px at center)"
+                                },
+                            }),
+                            ' ',
+                            BB.el({
+                                tagName: 'a',
+                                content: 'PaiShoFish49',
+                                custom: {
+                                    href: 'https://github.com/Fish49',
+                                    target: '_blank',
+                                    tabIndex: '-1',
+                                },
+                            }),
+                            ' © 2025',
+                            BB.el({ tagName: 'br' }),
                         ],
                     }),
                     makeLicenses(),
@@ -311,6 +335,45 @@ export class SettingsUi {
                     },
                 }),
             );
+
+            versionEl.append(
+                BB.el({ className: 'grid-hr', css: { margin: '10px 0' } }),
+                createImage({
+                    alt: 'Piximal2',
+                    height: 25,
+                    src: piximal2LogoImg,
+                }),
+                BB.el({ tagName: 'br' }),
+                createImage({
+                    alt: 'icon',
+                    height: 20,
+                    src: PaiShoFish49LogoImg,
+                    css: {
+                        verticalAlign: 'middle',
+                        clipPath: "circle(10px at center)"
+                    },
+                }),
+                ' ',
+                BB.el({
+                    tagName: 'a',
+                    content: 'PaiShoFish49',
+                    custom: {
+                        href: 'https://github.com/Fish49',
+                        target: '_blank',
+                        tabIndex: '-1',
+                    },
+                }),
+                ' © 2025',
+                BB.el({ tagName: 'br' }),
+                BB.el({
+                    tagName: 'a',
+                    content: LANG('source-code'),
+                    custom: {
+                        href: 'https://github.com/Fish49/Piximal2-Klecks',
+                        target: '_blank',
+                    },
+                }),
+            )
         }
 
         window.addEventListener('storage', (e) => {

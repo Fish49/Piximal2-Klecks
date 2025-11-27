@@ -51,7 +51,8 @@ const mnemonics = [
     "lnand",
     "lxnor",
     "quant",
-    "resolve"
+    "resolve",
+    "consume"
 ]
 
 export class Piximal2 {
@@ -967,7 +968,16 @@ export class Piximal2 {
                     let out = argumentPointer;
                     argumentPointer = this.getNextIndAfterPointer(argumentPointer);
                     this.moveExecutionPointer(threadPointerInd, argumentPointer);
-                    this.writePointerToInd(out, this.getLiteralPointer(a));
+                    this.writePointerToInd(this.getLiteralPointer(out), this.getLiteralPointer(a));
+                    break;
+                }
+                case 48: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointerToInd(this.getLiteralPointer(out), this.getNextIndAfterPointer(this.getLiteralPointer(a)));
                     break;
                 }
             }

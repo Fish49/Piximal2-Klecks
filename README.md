@@ -1,4 +1,6 @@
-🖌️ [Demo](https://kleki.com/) | ❓ [About](https://kleki.com/about/) | 📝 [Dev Blog](https://blog.kleki.com/)
+
+Kleki: 🖌️ [Demo](https://kleki.com/) | ❓ [About](https://kleki.com/about/) | 📝 [Dev Blog](https://blog.kleki.com/)
+Piximal2-Klecks: 🖌️ [Demo](https://paishofish49.net) | ❓ About (see spec.md) | 📝 No Dev Blog
 
 <p style="text-align:center">
 <img src="https://bitbof.com/stuff/2022-01-klecks/2022-03-klecks-github.png" alt="Klecks"><br>
@@ -7,6 +9,8 @@
 Klecks (German for "splash of color", pronounced "clex") is the official open-source release of the community-funded online painting app [Kleki](https://kleki.com).
 
 Klecks can run in standalone mode (e.g. on [kleki.com](https://kleki.com)), or embed (e.g. on [2draw.net](https://2draw.net)) for drawing communities.
+
+Piximal2-Klecks is a fork of Klecks by PaiShoFish49 to host his esolang: Piximal2
 
 ## Features
 - Layers
@@ -19,10 +23,12 @@ Klecks can run in standalone mode (e.g. on [kleki.com](https://kleki.com)), or e
 - Editing tools: transform, crop/expand, resize, perspective
 - Supports all major form factors: desktop, tablet and phone
 - Multi-language (10+ languages)
+- Piximal2
 
 ---
 
 Created by developer/artist [bitbof](https://bitbof.com)
+Forked and modified by developer/artist [PaiShoFish49](https://github.com/Fish49)
 
 ---
 
@@ -102,12 +108,15 @@ the embed-version.
   - Problems are printed to the command line output
 
 # Help fund this project
-Klecks and Kleki are community funded. [Donate today](https://kleki.com/donate/)
+Klecks and Kleki are community funded. [Donate today](https://kleki.com/donate/).
+Piximal2-Klecks is a passion project and is not funded.
 
 # License
 
 bitbof © 2025 - Released under the MIT License. Icons by bitbof are public domain (excluding the Klecks logo, bitbof logo).
 While Kleki and Klecks are jointly developed, Kleki's license is separate from Klecks. Kleki must be licensed from bitbof.
+
+Piximal2: PaiShoFish49 © 2025 - MIT License.
 
 # Piximal 2
 
