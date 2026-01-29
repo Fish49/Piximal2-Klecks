@@ -11,11 +11,13 @@ import { MultiPolygon } from 'polygon-clipping';
 import { getSelectionPath2d } from '../../bb/multi-polygon/get-selection-path-2d';
 import { boundsOverlap, integerBounds } from '../../bb/math/math';
 import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bounds';
+import { genBrushAlpha04 } from './alphas/brush-alphas';
 
 const ALPHA_CIRCLE = 0;
 const ALPHA_CHALK = 1;
 const ALPHA_CAL = 2; // calligraphy
 const ALPHA_SQUARE = 3;
+const ALPHA_CUSTOM = 4;
 
 const TWO_PI = 2 * Math.PI;
 
@@ -43,11 +45,13 @@ export class PenBrush {
     private inputIsDrawing: boolean = false;
     private bezierLine: BezierLine | null = null;
 
+    private customBrush: HTMLCanvasElement = BB.canvas(1, 1);
+
     // mipmapping
     private readonly alphaCanvas128: HTMLCanvasElement = BB.canvas(128, 128);
     private readonly alphaCanvas64: HTMLCanvasElement = BB.canvas(64, 64);
     private readonly alphaCanvas32: HTMLCanvasElement = BB.canvas(32, 32);
-    private readonly alphaOpacityArr: number[] = [1, 0.9, 1, 1];
+    private readonly alphaOpacityArr: number[] = [1, 0.9, 1, 1, 1];
 
     private changedTiles: boolean[] = [];
 
@@ -103,13 +107,24 @@ export class PenBrush {
 
             ctx.globalCompositeOperation = 'destination-in';
             ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(
-                ALPHA_IM_ARR[this.settingAlphaId],
-                0,
-                0,
-                instructionArr[i][1],
-                instructionArr[i][1],
-            );
+            if (this.settingAlphaId !== 4 && this.settingAlphaId !== 5) {
+                ctx.drawImage(
+                    ALPHA_IM_ARR[this.settingAlphaId],
+                    0,
+                    0,
+                    instructionArr[i][1],
+                    instructionArr[i][1],
+                );
+            } else {
+                ctx.drawImage(
+                    genBrushAlpha04(instructionArr[i][1], this.customBrush),
+                    0,
+                    0,
+                    instructionArr[i][1],
+                    instructionArr[i][1],
+                );
+            }
+            console.log("idk", ctx.getImageData(16, 16, 5, 5));
 
             ctx.restore();
         }
@@ -434,11 +449,15 @@ export class PenBrush {
 
     //SET
     setAlpha(a: number): void {
-        if (this.settingAlphaId === a) {
+        if (this.settingAlphaId === a && this.settingAlphaId !== 4) {
             return;
         }
         this.settingAlphaId = a;
         this.updateAlphaCanvas();
+    }
+
+    setCustomBrush(a: HTMLCanvasElement) {
+        this.customBrush = a;
     }
 
     setColor(c: TRgb): void {

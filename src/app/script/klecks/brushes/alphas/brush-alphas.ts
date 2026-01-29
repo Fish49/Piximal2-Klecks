@@ -81,7 +81,71 @@ export function genBrushAlpha02(w: number): HTMLCanvasElement {
             imData.data[i + 3] = col;
         }
     }
-
+    
     ctx.putImageData(imData, 0, 0);
+    console.log(ctx.getImageData(16, 16, 10, 10))
+    return canvas;
+}
+
+export function genBrushAlpha04(w: number, data: HTMLCanvasElement | null = null) {
+    const h = w;
+    const canvas = BB.canvas(w, h);
+    const ctx2 = BB.ctx(canvas);
+    if (data === null) {
+        const imData = ctx2.createImageData(w, h);
+        for (let x = 0; x < w; x++) {
+            for (let y = 0; y < h; y++) {
+                const i = (y * w + x) * 4;
+
+                let rx = 2*x/(w-1) - 1;
+                let ry = 2*y/(h-1) - 1;
+
+                let d = Math.sqrt(rx**2 + ry**2);
+                let pattern = 0;
+                if (d < 0.9 && d > 0.8) {
+                    pattern = 255;
+                }
+
+                imData.data[i] = 0;
+                imData.data[i + 1] = 0;
+                imData.data[i + 2] = 0;
+                imData.data[i + 3] = BB.clamp(pattern, 0, 255);
+            }
+        }
+        ctx2.putImageData(imData, 0, 0);
+    } else {
+        ctx2.globalCompositeOperation = "copy";
+        ctx2.clearRect(0, 0, w, h);
+        ctx2.drawImage(data, 0, 0, w, h);
+    }
+    console.log(ctx2.getImageData(16, 16, 10, 10));
+    return canvas;
+}
+
+export function genBrushAlpha05(w: number) {
+    const scaleFac = w / 500;
+    const h = w;
+    const canvas = BB.canvas(w, h);
+    const ctx2 = BB.ctx(canvas);
+    const imData = ctx2.createImageData(w, h);
+    for (let x = 0; x < w; x++) {
+        for (let y = 0; y < h; y++) {
+            const i = (y * w + x) * 4;
+
+            let rx = Math.abs(2*x/(w-1) - 1);
+            let ry = Math.abs(2*y/(h-1) - 1);
+
+            let pattern = 0;
+            if (Math.min(rx, ry) < 0.1) {
+                pattern = 255
+            }
+
+            imData.data[i] = 0;
+            imData.data[i + 1] = 0;
+            imData.data[i + 2] = 0;
+            imData.data[i + 3] = BB.clamp(pattern, 0, 255);
+        }
+    }
+    ctx2.putImageData(imData, 0, 0);
     return canvas;
 }

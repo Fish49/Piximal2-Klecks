@@ -5,11 +5,12 @@ import { Checkbox } from '../ui/components/checkbox';
 import { KlSlider } from '../ui/components/kl-slider';
 import { createPenPressureToggle } from '../ui/components/create-pen-pressure-toggle';
 import brushIconImg from 'url:/src/app/img/ui/brush-pen.svg';
-import { genBrushAlpha01, genBrushAlpha02 } from '../brushes/alphas/brush-alphas';
+import { genBrushAlpha01, genBrushAlpha02, genBrushAlpha04, genBrushAlpha05 } from '../brushes/alphas/brush-alphas';
 import { TBrushUi } from '../kl-types';
 import { LANG, LANGUAGE_STRINGS } from '../../language/language';
 import { Options } from '../ui/components/options';
 import { PenBrush } from '../brushes/pen-brush';
+import { KlCanvas } from '../canvas/kl-canvas';
 
 export const penBrushUi = (function () {
     const brushInterface = {
@@ -41,6 +42,8 @@ export const penBrushUi = (function () {
         LANG('brush-pen-chalk'),
         LANG('brush-pen-calligraphy'),
         LANG('brush-pen-square'),
+        LANG('brush-pen-custom'),
+        LANG('brush-pen-add'),
     ];
     LANGUAGE_STRINGS.subscribe(() => {
         brushInterface.tooltip = LANG('brush-pen');
@@ -49,6 +52,8 @@ export const penBrushUi = (function () {
             LANG('brush-pen-chalk'),
             LANG('brush-pen-calligraphy'),
             LANG('brush-pen-square'),
+            LANG('brush-pen-custom'),
+            LANG('brush-pen-add'),
         ];
     });
 
@@ -60,9 +65,10 @@ export const penBrushUi = (function () {
         let sizeSlider: KlSlider;
         let opacitySlider: KlSlider;
         let scatterSlider: KlSlider;
+        let potentialCustomBrush: HTMLCanvasElement;
 
         const alphaOptions = new Options({
-            optionArr: [0, 1, 2, 3].map((id) => {
+            optionArr: [0, 1, 2, 3, 4, 5].map((id) => {
                 const alpha = BB.el({
                     className: 'dark-invert',
                     css: {
@@ -87,6 +93,10 @@ export const penBrushUi = (function () {
                     ctx.drawImage(genBrushAlpha01(60), 5, 5);
                 } else if (id === 2) {
                     ctx.drawImage(genBrushAlpha02(60), 5, 5);
+                } else if (id === 4) {
+                    ctx.drawImage(genBrushAlpha04(60), 5, 5);
+                } else if (id === 5) {
+                    ctx.drawImage(genBrushAlpha05(60), 5, 5);
                 }
                 alpha.style.backgroundImage = 'url(' + canvas.toDataURL('image/png') + ')';
 
@@ -98,7 +108,12 @@ export const penBrushUi = (function () {
             }),
             initId: 0,
             onChange: (id) => {
-                brush.setAlpha(id);
+                if (id === 5) {
+                    brush.setCustomBrush(potentialCustomBrush);
+                    alphaOptions.setValue(4)
+                } else {
+                    brush.setAlpha(id);
+                }
             },
         });
 
@@ -285,6 +300,14 @@ export const penBrushUi = (function () {
             brush.setColor(c);
         };
         this.setLayer = function (layer) {
+            const bounds = BB.canvasBounds(layer.context);
+            if (bounds !== undefined) {
+                const a = Math.max(bounds.height, bounds.width);
+                potentialCustomBrush = BB.canvas(a, a);
+                const ctx = BB.ctx(potentialCustomBrush);
+                ctx.drawImage(layer.canvas, bounds.x, bounds.y, a, a, 0, 0, a, a);
+            }
+
             brush.setContext(layer.context);
         };
         this.startLine = function (x, y, p) {
