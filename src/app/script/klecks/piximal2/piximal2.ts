@@ -1,5 +1,9 @@
 import { TKlAppToolId } from "../../app/kl-app";
 import { RGB } from "../../bb/color/color";
+import { KlHistory } from "../history/kl-history";
+import { canvasAndChangedTilesToLayerTiles } from "../history/push-helpers/canvas-to-layer-tiles";
+import { getChangedTiles, updateChangedTiles } from "../history/push-helpers/changed-tiles";
+import { getPushableLayerChange } from "../history/push-helpers/get-pushable-layer-change";
 import { Easel } from "../ui/easel/easel";
 import { draw } from "./pix2Parser";
 
@@ -57,12 +61,30 @@ const mnemonics = [
 
 export class Piximal2 {
     private context: CanvasRenderingContext2D = {} as CanvasRenderingContext2D;
+    private changedTiles: boolean[] = [];
+    private klHistory: KlHistory = {} as KlHistory;
     easel: Easel<TKlAppToolId>;
 
     private threadIndex = 0;
 
     constructor(easel: Easel<TKlAppToolId>) {
         this.easel = easel;
+    }
+
+    pushHistory() {
+        if (this.changedTiles.some((item) => item)) {
+            this.klHistory.push(
+                getPushableLayerChange(
+                    this.klHistory.getComposed(),
+                    canvasAndChangedTilesToLayerTiles(this.context.canvas, this.changedTiles),
+                ),
+            );
+            this.changedTiles = [];
+        }
+    }
+
+    setHistory(klHistory: KlHistory): void {
+        this.klHistory = klHistory;
     }
 
     getWidth() {
@@ -78,6 +100,20 @@ export class Piximal2 {
         this.context.fillStyle = `rgb(${color.r}, ${color.g}, ${color.b})`;
         this.context.fillRect(x, y, 1, 1);
         this.context.restore();
+
+        this.changedTiles = updateChangedTiles(
+            this.changedTiles,
+            getChangedTiles(
+                {
+                    x1: x,
+                    y1: y,
+                    x2: x+1,
+                    y2: y+1
+                },
+                this.context.canvas.width,
+                this.context.canvas.height,
+            ),
+        );
     }
 
     getPixelAtCoords(x: number, y: number) {

@@ -156,6 +156,7 @@ This has been reported to Google.
             },
             onClick: () => {
                 this.piximal2.step(true);
+                this.piximal2.pushHistory();
                 this.piximal2.requestRender();
             }
         });
@@ -172,6 +173,7 @@ This has been reported to Google.
             },
             onClick: () => {
                 this.piximal2.compile(this.sourceBox!.value);
+                this.piximal2.pushHistory();
                 this.piximal2.requestRender();
             }
         });
@@ -205,6 +207,7 @@ This has been reported to Google.
             onClick: () => {
                 this.running = false;
                 this.piximal2.requestRender();
+                this.piximal2.pushHistory();
                 this.rootEl.replaceChild(this.runButton!, this.rootEl.childNodes[2]);
             }
         });
@@ -272,6 +275,7 @@ This has been reported to Google.
         this.onCopyToClipboard = p.onCopyToClipboard;
         this.onPaste = p.onPaste;
         this.piximal2 = p.piximal2;
+        this.piximal2.setHistory(this.klHistory);
 
         this.rootEl = BB.el();
     }
