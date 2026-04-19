@@ -1,6 +1,6 @@
 
 Kleki: 🖌️ [Demo](https://kleki.com/) | ❓ [About](https://kleki.com/about/) | 📝 [Dev Blog](https://blog.kleki.com/)
-Piximal2-Klecks: 🖌️ [Demo](https://paishofish49.net) | ❓ About (see spec.md) | 📝 No Dev Blog
+Piximal2-Klecks: 🖌️ [Demo](https://paishofish49.net/piximal2-klecks) | ❓ About (see spec.md) | 📝 No Dev Blog
 
 <p style="text-align:center">
 <img src="https://bitbof.com/stuff/2022-01-klecks/2022-03-klecks-github.png" alt="Klecks"><br>
@@ -116,7 +116,7 @@ Piximal2-Klecks is a passion project and is not funded.
 bitbof © 2025 - Released under the MIT License. Icons by bitbof are public domain (excluding the Klecks logo, bitbof logo).
 While Kleki and Klecks are jointly developed, Kleki's license is separate from Klecks. Kleki must be licensed from bitbof.
 
-Piximal2: PaiShoFish49 © 2025 - MIT License.
+Piximal2: PaiShoFish49 © 2026 - MIT License.
 
 # Piximal 2
 

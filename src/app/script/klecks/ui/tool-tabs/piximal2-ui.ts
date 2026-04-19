@@ -55,6 +55,7 @@ export class Piximal2Ui {
     private readonly klHistory: KlHistory;
     private readonly onCopyToClipboard: () => void;
     private readonly onPaste: () => void;
+
     private readonly piximal2;
     private running: boolean = false;
     private stepButton: HTMLButtonElement | undefined;
@@ -64,6 +65,8 @@ export class Piximal2Ui {
     private sourceBox: HTMLTextAreaElement | undefined;
     private pixelInfo: HTMLParagraphElement | undefined;
     private pointerListener: PointerListener | undefined;
+    private pointerX: number = 0;
+    private pointerY: number = 0;
 
     private readonly rootEl: HTMLDivElement;
     private isInit = false;
@@ -76,7 +79,7 @@ export class Piximal2Ui {
         this.running = true;
         let iter = 0;
         while (this.running) {
-            this.piximal2. /* this is a really weird place to put a comment */ step(false);
+            this.piximal2.step(false);
             if (iter == 500) {
                 this.piximal2.requestRender();
                 iter = 0;
@@ -92,7 +95,7 @@ export class Piximal2Ui {
             return "";
         }
         let ind = this.piximal2.coordsToInd(x, y);
-        let color = this.piximal2.getPixel(ind);
+        let color = this.piximal2.getPixelAtCoords(x, y);
         let int = this.piximal2.colorToInt(color);
         let literal = this.piximal2.getLiteralPointer(ind);
         return `(${x}, ${y})<br>index: ${ind}<br>color: ${color.r}, ${color.g}, ${color.b}<br>hex: ${int.toString(16)}<br>dec: ${int}<br>pointer: ${literal}`;
@@ -245,12 +248,9 @@ This has been reported to Google.
         this.pointerListener = new PointerListener({
             target: this.piximal2.easel.getElement(),
             onPointer: (e) => {
-                const mat = createMatrixFromTransform(this.piximal2.easel.getTransform());
-                let canvasPoint = applyToPoint(inverse(mat), [e.relX, e.relY]);
-                canvasPoint = [Math.floor(canvasPoint[0]), Math.floor(canvasPoint[1])];
-                if (this.pixelInfo != null) {
-                    this.pixelInfo.innerHTML = this.getPointInfo(canvasPoint[0], canvasPoint[1]);
-                }
+                this.pointerX = e.relX;
+                this.pointerY = e.relY;
+                this.pointUpdateCallback();
             }
         });
 
@@ -276,8 +276,18 @@ This has been reported to Google.
         this.onPaste = p.onPaste;
         this.piximal2 = p.piximal2;
         this.piximal2.setHistory(this.klHistory);
+        this.piximal2.setUi(this);
 
         this.rootEl = BB.el();
+    }
+
+    pointUpdateCallback() {
+        const mat = createMatrixFromTransform(this.piximal2.easel.getTransform());
+        let canvasPoint = applyToPoint(inverse(mat), [this.pointerX, this.pointerY]);
+        canvasPoint = [Math.floor(canvasPoint[0]), Math.floor(canvasPoint[1])];
+        if (this.pixelInfo != null) {
+            this.pixelInfo.innerHTML = this.getPointInfo(canvasPoint[0], canvasPoint[1]);
+        }
     }
 
     getElement(): HTMLElement {

@@ -1,11 +1,20 @@
-import { TKlAppToolId } from "../../app/kl-app";
-import { RGB } from "../../bb/color/color";
-import { KlHistory } from "../history/kl-history";
-import { canvasAndChangedTilesToLayerTiles } from "../history/push-helpers/canvas-to-layer-tiles";
-import { getChangedTiles, updateChangedTiles } from "../history/push-helpers/changed-tiles";
-import { getPushableLayerChange } from "../history/push-helpers/get-pushable-layer-change";
-import { Easel } from "../ui/easel/easel";
+import { BB } from '../../bb/bb';
 import { draw } from "./pix2Parser";
+import { Easel } from "../ui/easel/easel";
+import { RGB } from "../../bb/color/color";
+import { TBounds } from '../../bb/bb-types';
+import { TKlAppToolId } from "../../app/kl-app";
+import { createArray } from '../../bb/base/base';
+import { isLayerFill, TRgb, TRgba } from '../kl-types';
+import { copyImageData } from '../utils/copy-image-data';
+import { createImageDataTile } from '../history/image-data-tile';
+import { KlHistory, HISTORY_TILE_SIZE } from "../history/kl-history";
+import { boundsOverlap, clamp, integerBounds } from '../../bb/math/math';
+import { getPushableLayerChange } from "../history/push-helpers/get-pushable-layer-change";
+import { getChangedTiles, updateChangedTiles } from "../history/push-helpers/changed-tiles";
+import { canvasAndChangedTilesToLayerTiles } from "../history/push-helpers/canvas-to-layer-tiles";
+import { Eyedropper } from '../canvas/eyedropper';
+import { Piximal2Ui } from '../ui/tool-tabs/piximal2-ui';
 
 const mnemonics = [
     "stall",
@@ -61,8 +70,13 @@ const mnemonics = [
 
 export class Piximal2 {
     private context: CanvasRenderingContext2D = {} as CanvasRenderingContext2D;
-    private changedTiles: boolean[] = [];
+    private eyedropper = new Eyedropper();
+    private ui: Piximal2Ui | undefined;
+
     private klHistory: KlHistory = {} as KlHistory;
+    private redrawBounds: TBounds | undefined;
+    private cells: (ImageData | undefined)[] = [];
+
     easel: Easel<TKlAppToolId>;
 
     private threadIndex = 0;
@@ -71,20 +85,93 @@ export class Piximal2 {
         this.easel = easel;
     }
 
+    /**
+     * draw cells onto context
+     * @param cells
+     */
+    private drawCells(cells: (ImageData | undefined)[]): void {
+        const cellsW = this.getCellsWidth();
+        cells.forEach((imageData, index) => {
+            if (!imageData) {
+                return;
+            }
+            const cellOffsetX = (index % cellsW) * HISTORY_TILE_SIZE;
+            const cellOffsetY = Math.floor(index / cellsW) * HISTORY_TILE_SIZE;
+            this.context.putImageData(imageData, cellOffsetX, cellOffsetY);
+        });
+    }
+
+    /**
+     * draw changed cells (changed by brushstroke) onto context
+     * @private
+     */
+    private drawChangedCells(): void {
+        if (!this.redrawBounds) {
+            return;
+        }
+
+        const cells: typeof this.cells = this.cells.map(() => undefined);
+        const touchedCells = this.getTouchedCells(this.redrawBounds);
+        touchedCells.forEach((isTouched, index) => {
+            if (isTouched) {
+                cells[index] = this.cells[index];
+            }
+        });
+        this.drawCells(cells);
+        this.redrawBounds = undefined;
+    }
+
+    /**
+     * push changes to history
+    */
     pushHistory() {
-        if (this.changedTiles.some((item) => item)) {
+        this.drawChangedCells();
+        if (this.cells.some((item) => item)) {
+            console.log(this.cells);
             this.klHistory.push(
                 getPushableLayerChange(
                     this.klHistory.getComposed(),
-                    canvasAndChangedTilesToLayerTiles(this.context.canvas, this.changedTiles),
+                    this.cells.map((cell) => {
+                        return cell ? createImageDataTile(cell) : undefined;
+                    }),
                 ),
+                undefined,
+                "piximal2"
             );
-            this.changedTiles = [];
         }
+        this.invalidateCache();
     }
 
     setHistory(klHistory: KlHistory): void {
         this.klHistory = klHistory;
+        this.klHistory.addListener(() => {
+                const top = this.klHistory.getEntries().at(-1);
+                if (this.ui) {
+                    this.ui.pointUpdateCallback();
+                }
+                if (!top) {
+                    return;
+                }
+                if (top.description === "piximal2") {
+                    return;
+                }
+                if (!top.data.layerMap) {
+                    return;
+                }
+                const activeLayerId = klHistory.getComposed().activeLayerId;
+                if (!top.data.layerMap[activeLayerId].tiles) {
+                    return;
+                }
+                top.data.layerMap[activeLayerId].tiles.forEach((tile, index) => {
+                    if (tile) {
+                        this.cells[index] = undefined;
+                    }
+                });
+                if (this.ui) {
+                    this.ui.pointUpdateCallback();
+                }
+            }
+        )
     }
 
     getWidth() {
@@ -95,30 +182,124 @@ export class Piximal2 {
         return this.context.canvas.height;
     }
 
-    drawPixelAtCoords(x: number, y: number, color: RGB) {
-        this.context.save();
-        this.context.fillStyle = `rgb(${color.r}, ${color.g}, ${color.b})`;
-        this.context.fillRect(x, y, 1, 1);
-        this.context.restore();
+    private getCellsWidth(): number {
+        return Math.ceil(this.context.canvas.width / HISTORY_TILE_SIZE);
+    }
 
-        this.changedTiles = updateChangedTiles(
-            this.changedTiles,
-            getChangedTiles(
-                {
-                    x1: x,
-                    y1: y,
-                    x2: x+1,
-                    y2: y+1
-                },
-                this.context.canvas.width,
-                this.context.canvas.height,
-            ),
-        );
+    private getTouchedCells(bounds: TBounds): boolean[] {
+        const touchedCells = this.cells.map(() => false);
+        const cellsW = this.getCellsWidth();
+        bounds = {
+            x1: Math.floor(bounds.x1 / HISTORY_TILE_SIZE),
+            y1: Math.floor(bounds.y1 / HISTORY_TILE_SIZE),
+            x2: Math.floor(bounds.x2 / HISTORY_TILE_SIZE),
+            y2: Math.floor(bounds.y2 / HISTORY_TILE_SIZE),
+        };
+        for (let i = bounds.x1; i <= bounds.x2; i++) {
+            for (let e = bounds.y1; e <= bounds.y2; e++) {
+                touchedCells[e * cellsW + i] = true;
+            }
+        }
+        return touchedCells;
+    }
+
+    /**
+     * update copyImageData. copy over new regions if needed
+     */
+    private copyFromCanvas(bounds: TBounds | undefined): void {
+        if (!bounds) {
+            return;
+        }
+
+        const touchedCells = this.getTouchedCells(bounds);
+        const composed = this.klHistory.getComposed()
+        const composedLayer = composed.layerMap[composed.activeLayerId];
+
+        touchedCells.forEach((item, i) => {
+            if (!item || this.cells[i]) {
+                // not touched, or already copied
+                return;
+            }
+            const composedTile = composedLayer.tiles[i];
+            if (isLayerFill(composedTile)) {
+                const canvas = BB.canvas(HISTORY_TILE_SIZE, HISTORY_TILE_SIZE);
+                const ctx = BB.ctx(canvas);
+                ctx.fillStyle = composedTile.fill;
+                ctx.fillRect(0, 0, HISTORY_TILE_SIZE, HISTORY_TILE_SIZE);
+                this.cells[i] = ctx.getImageData(0, 0, HISTORY_TILE_SIZE, HISTORY_TILE_SIZE);
+            } else {
+                this.cells[i] = copyImageData(composedTile.data);
+            }
+        });
+    }
+
+    /**
+     * Slice up bounds according to cells
+     * @param bounds
+     * @private
+     */
+    private sliceBounds(bounds: TBounds): { index: number; bounds: TBounds }[] {
+        const cellsW = this.getCellsWidth();
+        const result: { index: number; bounds: TBounds }[] = [];
+        const touchedCells = this.getTouchedCells(bounds);
+
+        touchedCells.forEach((cell, i) => {
+            if (!cell) {
+                return;
+            }
+
+            const cellOffsetX = (i % cellsW) * HISTORY_TILE_SIZE;
+            const cellOffsetY = Math.floor(i / cellsW) * HISTORY_TILE_SIZE;
+            const cellWidth = this.cells[i]!.width;
+            const cellHeight = this.cells[i]!.height;
+
+            const inCellBounds = {
+                x1: Math.max(0, bounds.x1 - cellOffsetX),
+                y1: Math.max(0, bounds.y1 - cellOffsetY),
+                x2: Math.min(cellWidth - 1, bounds.x2 - cellOffsetX),
+                y2: Math.min(cellHeight - 1, bounds.y2 - cellOffsetY),
+            };
+            if (inCellBounds.x1 > inCellBounds.x2 || inCellBounds.y1 > inCellBounds.y2) {
+                return;
+            }
+            result.push({
+                index: i,
+                bounds: inCellBounds,
+            });
+        });
+
+        return result;
+    }
+
+    drawPixelAtCoords(x: number, y: number, color: RGB) {
+        // console.log(this.cells.length);// - this.cells.filter((value) => value === undefined).length);
+        const bounds: TBounds = {x1: x, y1: y, x2: x + 1, y2: y + 1};
+        this.copyFromCanvas(bounds);
+        const slice = this.sliceBounds(bounds)[0];
+        const cell = this.cells[slice.index];
+        const data = cell!.data;
+        const pixelIndex = slice.bounds.y1 * cell!.width + slice.bounds.x1;
+        this.redrawBounds = BB.updateBounds(this.redrawBounds, bounds);
+
+        data[4*pixelIndex] = color.r;
+        data[4*pixelIndex+1] = color.g;
+        data[4*pixelIndex+2] = color.b;
     }
 
     getPixelAtCoords(x: number, y: number) {
-        let imageData: ImageData = this.context.getImageData(x, y, 1, 1);
-        return new RGB(imageData.data[0], imageData.data[1], imageData.data[2]);
+        const bounds: TBounds = {x1: x, y1: y, x2: x + 1, y2: y + 1};
+        const cellsW = this.getCellsWidth();
+        const cellIndex = Math.floor(y / HISTORY_TILE_SIZE) * cellsW + Math.floor(x / HISTORY_TILE_SIZE);
+        if (!this.cells[cellIndex]) {
+            return this.eyedropper.getColorAt(x, y, this.klHistory.getComposed());
+        }
+        this.copyFromCanvas(bounds);
+        const slice = this.sliceBounds(bounds)[0];
+        const cell = this.cells[slice.index];
+        const data = cell!.data;
+        const pixelIndex = slice.bounds.y1 * cell!.width + slice.bounds.x1;
+
+        return new RGB(data[pixelIndex*4], data[pixelIndex*4+1], data[pixelIndex*4+2])
     }
 
     coordsToInd(x: number, y: number) {
@@ -191,12 +372,25 @@ export class Piximal2 {
         return ret;
     }
 
+    invalidateCache() {
+        const totalCells = Math.ceil(this.context.canvas.width / HISTORY_TILE_SIZE) *
+        Math.ceil(this.context.canvas.height / HISTORY_TILE_SIZE);
+        this.cells = createArray(totalCells, undefined);
+    }
+    
     setContext(c: CanvasRenderingContext2D): void {
         this.context = c;
+        this.invalidateCache();
+    }
+
+    setUi(ui: Piximal2Ui) {
+        this.ui = ui;
     }
 
     requestRender() {
+        this.drawChangedCells();
         this.easel.requestRender();
+        this.ui?.pointUpdateCallback();
     }
 
     usingDoublePointers() {

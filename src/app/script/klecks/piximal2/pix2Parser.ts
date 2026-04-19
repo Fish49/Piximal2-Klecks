@@ -2,7 +2,7 @@ import { Piximal2 } from "./piximal2";
 
 const sl_comment = /\/\/.*\n/g;
 const ml_comment = /\/\*.*\*(\/)/gms;
-const numberRE = /^((0x[0-9a-fA-F]+)|(0b[01]+$)|(0o[0-7]+)|([0-9]+))$/;
+const numberRE = /^((0x[0-9a-fA-F_]+)|(0b[01_]+)|(0o[0-7_]+)|([0-9_]+))$/;
 const ws = /\s+/g;
 
 const defaultKeywords = {
@@ -90,7 +90,7 @@ export function draw(s: string, pix2: Piximal2) {
     Object.assign(kwrds, defaultKeywords);
     s = s.replace(ml_comment, " ");
     s = s.replace(sl_comment, " ");
-    s = s.replace("\\\n", "");
+    s = s.replaceAll("\\\n", "");
     let toks = s.split(ws);
     // console.log(toks);
     let terms: instruction[] = [];
@@ -98,11 +98,11 @@ export function draw(s: string, pix2: Piximal2) {
         if (element == "") {
             // do nothing.
         } else if (numberRE.test(element)) {
-            terms.push({"kind": "number", "value": BigInt(element)});
+            terms.push({"kind": "number", "value": BigInt(element.replaceAll("_",""))});
         } else if (element.endsWith(":")) {
             terms.push({"kind": "label", "value": element.slice(0, -1)});
         } else if (element.startsWith(":") && numberRE.test(element.slice(1))) {
-            terms.push({"kind": "from", "value": BigInt(element.slice(1))});
+            terms.push({"kind": "from", "value": BigInt(element.replaceAll("_","").slice(1))});
         } else {
             terms.push({"kind": "keyword", "value": element});
         }

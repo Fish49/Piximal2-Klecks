@@ -358,7 +358,7 @@ export class SettingsUi {
                     tagName: 'a',
                     content: 'PaiShoFish49',
                     custom: {
-                        href: 'https://github.com/Fish49',
+                        href: 'https://paishofish49.net',
                         target: '_blank',
                         tabIndex: '-1',
                     },

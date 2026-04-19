@@ -108,7 +108,7 @@ export class KlHistory {
         this.listeners.push(l);
     }
 
-    push(entryData: THistoryEntryData, replaceTop?: boolean): void {
+    push(entryData: THistoryEntryData, replaceTop?: boolean, description?: string): void {
         if (this.pauseStack > 0) {
             return;
         }
@@ -116,6 +116,7 @@ export class KlHistory {
             timestamp: new Date().getTime(),
             memoryEstimateBytes: estimateBytes(entryData),
             data: entryData,
+            description
         };
 
         if (replaceTop && this.index > 0) {
