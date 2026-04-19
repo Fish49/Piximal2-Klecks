@@ -60,6 +60,11 @@ export class PinchZoomWatcher {
 
         let isInDom = false;
         function check() {
+            if (!document.body) {
+                // somehow this is possible although all scripts run from within <body>
+                // observed with user agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36
+                return;
+            }
             if (isDismissed) {
                 return;
             }

@@ -689,7 +689,7 @@ Renaming a key across multiple language files:
 
   "filter-applied": {
     "hint": "used like this: „Invert“ applied. Informs that a filter was applied",
-    "value": "applied"
+    "value": '"{x}" applied'
   },
 
   "filter-tilt-shift-title": {
@@ -932,6 +932,7 @@ Renaming a key across multiple language files:
   "select-reset": 'Reset',
   "select-fill": 'Fill',
   "select-erase": 'Erase',
+  "select-transform-warp": 'Warp',
   "select-transform-clone": 'Clone',
   "select-transform-clone-applied": 'Cloned',
   "select-transform-move-to-layer": 'Move to layer:',

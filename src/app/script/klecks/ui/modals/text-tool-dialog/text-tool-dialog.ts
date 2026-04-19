@@ -177,7 +177,6 @@ export function textToolDialog(p: {
     };
 
     const modal = showModal({
-        target: document.body,
         message: `<b>${LANG('text-title')}</b>`,
         div: rootEl,
         buttons: ['Ok', 'Cancel'],

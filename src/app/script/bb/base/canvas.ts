@@ -1,8 +1,9 @@
-import { TBounds, TKeyString, TRect } from '../bb-types';
+import { TIndexBounds, TKeyString, TRect } from '../bb-types';
 import { createCanvas } from './create-canvas';
 import { asyncLoadImage, base64ToBlob, copyObj } from './base';
 import { MultiPolygon } from 'polygon-clipping';
 import { getSelectionPath2d } from '../multi-polygon/get-selection-path-2d';
+import { boundsToRect } from '../math/math';
 
 export function copyCanvas(canvas: HTMLCanvasElement | HTMLImageElement): HTMLCanvasElement {
     const resultCanvas = createCanvas(canvas.width, canvas.height);
@@ -408,56 +409,56 @@ export function freeCanvas(canvas: HTMLCanvasElement): void {
 }
 
 /**
- * Determine bounding box that describes all pixels which are not fully transparent.
+ * Determines a bounding box that describes all pixels, which are not fully transparent.
  * Returns undefined if empty.
- *
- * @param context
- * @param integerBounds optional - restricts the search to this area. bounds have to be integers
  */
-export function canvasBounds(
+export function getCanvasBounds(
     context: CanvasRenderingContext2D,
-    integerBounds?: TBounds,
+    //restricts the search to this area.
+    searchArea?: TIndexBounds,
 ): TRect | undefined {
-    const searchBounds = integerBounds ?? {
-        x1: 0,
-        y1: 0,
-        x2: context.canvas.width - 1,
-        y2: context.canvas.height - 1,
-    };
-    const searchWidth = searchBounds.x2 - searchBounds.x1 + 1;
-    const searchHeight = searchBounds.y2 - searchBounds.y1 + 1;
-
-    const imdat = context.getImageData(searchBounds.x1, searchBounds.y1, searchWidth, searchHeight);
-
-    if (imdat.data[3] > 0 && imdat.data[imdat.data.length - 1] > 0) {
-        return {
-            x: searchBounds.x1,
-            y: searchBounds.y1,
-            width: searchBounds.x2 - searchBounds.x1 + 1,
-            height: searchBounds.y2 - searchBounds.y1 + 1,
-        };
+    const searchRect = searchArea
+        ? boundsToRect(searchArea)
+        : {
+              x: 0,
+              y: 0,
+              width: context.canvas.width,
+              height: context.canvas.height,
+          };
+    if (searchRect.width <= 0 || searchRect.height <= 0) {
+        return undefined;
     }
-    const tempBounds: Partial<TBounds> = {
-        x1: undefined,
-        y1: undefined,
-        x2: undefined,
-        y2: undefined,
-    };
+
+    const imdat = context.getImageData(
+        searchRect.x,
+        searchRect.y,
+        searchRect.width,
+        searchRect.height,
+    );
+
+    // top-left and bottom-right are non-transparent.
+    if (imdat.data[3] > 0 && imdat.data[imdat.data.length - 1] > 0) {
+        return searchRect;
+    }
+
+    const tempBounds: Partial<TIndexBounds> = {};
+
     for (let i = 3; i < imdat.data.length; i += 4) {
         if (imdat.data[i] > 0) {
-            const x = ((i - 3) / 4) % searchWidth;
-            const y = Math.floor((i - 3) / 4 / searchWidth);
-            if (tempBounds.x1 === undefined || tempBounds.x1 > x) {
-                tempBounds.x1 = x;
+            const px = ((i - 3) / 4) % searchRect.width;
+            const py = Math.floor((i - 3) / 4 / searchRect.width);
+
+            if (tempBounds.x1 === undefined || px < tempBounds.x1) {
+                tempBounds.x1 = px;
             }
-            if (tempBounds.y1 === undefined) {
-                tempBounds.y1 = y;
+            if (tempBounds.y1 === undefined || py < tempBounds.y1) {
+                tempBounds.y1 = py;
             }
-            if (tempBounds.x2 === undefined || tempBounds.x2 < x) {
-                tempBounds.x2 = x;
+            if (tempBounds.x2 === undefined || px + 1 > tempBounds.x2) {
+                tempBounds.x2 = px;
             }
-            if (tempBounds.y2 === undefined || tempBounds.y2 < y) {
-                tempBounds.y2 = y;
+            if (tempBounds.y2 === undefined || py + 1 > tempBounds.y2) {
+                tempBounds.y2 = py;
             }
         }
     }
@@ -471,11 +472,25 @@ export function canvasBounds(
     }
 
     return {
-        x: tempBounds.x1 + searchBounds.x1,
-        y: tempBounds.y1 + searchBounds.y1,
-        width: tempBounds.x2! - tempBounds.x1 + 1,
-        height: tempBounds.y2! - tempBounds.y1 + 1,
+        x: tempBounds.x1 + searchRect.x,
+        y: tempBounds.y1 + searchRect.y,
+        width: tempBounds.x2 - tempBounds.x1 + 1,
+        height: tempBounds.y2 - tempBounds.y1 + 1,
     };
+}
+
+export function getImageDataSafely(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+): ImageData {
+    try {
+        return ctx.getImageData(x, y, width, height);
+    } catch (e) {
+        return new ImageData(width, height);
+    }
 }
 
 export function htmlCanvasToBlobAsync(canvas: HTMLCanvasElement, mimeType: string): Promise<Blob> {

@@ -1034,8 +1034,8 @@
   },
   'filter-applied': {
     hint: 'used like this: „Invert“ applied. Informs that a filter was applied',
-    original: 'applied',
-    value: 'applicerat'
+    original: '"{x}" applied',
+    value: '"{x}" applicerat'
   },
   'filter-tilt-shift-title': {
     hint: 'same as the button, but can be longer',
@@ -1498,6 +1498,10 @@
   'select-erase': {
     original: 'Erase',
     value: 'Sudda'
+  },
+  'select-transform-warp': {
+    original: 'Warp',
+    value: ''
   },
   'select-transform-clone': {
     original: 'Clone',

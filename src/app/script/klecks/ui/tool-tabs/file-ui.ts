@@ -179,6 +179,7 @@ export class FileUi {
             const exportTypeSelect = new KL.Select({
                 optionArr: [
                     ['png', 'PNG'],
+                    ['jpg', 'JPG'],
                     ['psd', 'PSD'],
                     ['layers', LANG('layers') + ' (PNG)'],
                 ],
@@ -203,7 +204,6 @@ export class FileUi {
                 this.browserStorageUi = new BrowserStorageUi({
                     projectStore: p.projectStore,
                     getProject: p.getProject,
-                    klRootEl: p.klRootEl,
                     applyUncommitted: this.applyUncommitted,
                     onOpen: p.onOpenBrowserStorage,
                     onStored: () => p.onStoredToBrowserStorage(),

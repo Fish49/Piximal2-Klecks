@@ -85,7 +85,6 @@ export class EditUi {
             });
             noteButton.onclick = () => {
                 KL.popup({
-                    target: this.klRootEl,
                     message: '<b>WebGL is not working</b>',
                     div: BB.el({
                         content: `
@@ -174,7 +173,6 @@ This has been reported to Google.
 
                     if (!('apply' in filters[filterKey])) {
                         KL.popup({
-                            target: this.klRootEl,
                             message: 'Application not fully loaded',
                             type: 'error',
                         });
@@ -190,7 +188,6 @@ This has been reported to Google.
                         } as TFilterApply);
                         if (!filterResult) {
                             KL.popup({
-                                target: this.klRootEl,
                                 message: "Couldn't apply the edit action",
                                 type: 'error',
                             });
@@ -202,10 +199,7 @@ This has been reported to Google.
                     if (filters[filterKey].isInstant) {
                         button.blur();
                         applyFilter(null);
-                        this.statusOverlay.out(
-                            '"' + filterName + '" ' + LANG('filter-applied'),
-                            true,
-                        );
+                        this.statusOverlay.out(LANG('filter-applied', { x: filterName }), true);
                     } else {
                         const secondaryColorRGB = this.klColorSlider.getSecondaryRGB();
                         let filterDialog: TFilterGetDialogResult<any> | undefined = undefined;
@@ -236,7 +230,6 @@ This has been reported to Google.
 
                         if (!filterDialog || 'error' in filterDialog) {
                             KL.popup({
-                                target: this.klRootEl,
                                 message: filterDialog
                                     ? filterDialog.error
                                     : 'Error: Could not perform action.',
@@ -249,7 +242,6 @@ This has been reported to Google.
                         // Todo should move into getDialogParams
                         filterDialog.errorCallback = (e) => {
                             KL.popup({
-                                target: this.klRootEl,
                                 message: 'Error: Could not perform action.',
                                 type: 'error',
                             });
@@ -274,7 +266,6 @@ This has been reported to Google.
                                             className: 'kl-info-btn',
                                             onClick: () => {
                                                 KL.popup({
-                                                    target: this.klRootEl,
                                                     message: LANG(filter.lang.description!),
                                                 });
                                             },
@@ -289,7 +280,6 @@ This has been reported to Google.
                         }
 
                         KL.popup({
-                            target: this.klRootEl,
                             message: title,
                             div: filterDialog.element,
                             style: style,

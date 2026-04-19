@@ -2,10 +2,10 @@ import { TMixMode } from '../../kl-types';
 import { BB } from '../../../bb/bb';
 import { css, throwIfNull } from '../../../bb/base/base';
 import { THEME } from '../../../theme/theme';
-import { Matrix, inverse, compose } from 'transformation-matrix';
+import { compose, inverse, Matrix } from 'transformation-matrix';
 import { createMatrixFromTransform } from '../../../bb/transform/create-matrix-from-transform';
 import { matrixToTuple } from '../../../bb/math/matrix-to-tuple';
-import { DEBUG_RENDERER_ENABLED, DEBUG_RENDER } from './debug-render';
+import { DEBUG_RENDER, DEBUG_RENDERER_ENABLED } from './debug-render';
 
 function fixScale(scale: number, pixels: number): number {
     return Math.round(pixels * scale) / pixels;
@@ -129,6 +129,7 @@ export class ProjectViewport {
         window.addEventListener('resize', this.resizeListener);
 
         this.pattern = throwIfNull(
+            // Exception: InvalidStateError: The object is in an invalid state.
             this.ctx.createPattern(BB.createCheckerCanvas(10, THEME.isDark()), 'repeat'),
         );
         THEME.addIsDarkListener(this.onIsDark);

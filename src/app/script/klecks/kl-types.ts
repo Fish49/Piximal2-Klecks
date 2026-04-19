@@ -324,5 +324,5 @@ export type TKlPsd = {
 export type TFillSampling = 'current' | 'all' | 'above';
 
 export type TUiLayout = 'left' | 'right';
-export type TExportType = 'png' | 'layers' | 'psd';
+export type TExportType = 'png' | 'jpg' | 'layers' | 'psd';
 export type TInterpolationAlgorithm = 'smooth' | 'pixelated';

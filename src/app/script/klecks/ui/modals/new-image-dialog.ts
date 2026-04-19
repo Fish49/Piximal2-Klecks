@@ -454,7 +454,6 @@ export function newImageDialog(p: {
     newImDiv.append(previewWrapper);
 
     showModal({
-        target: document.body,
         message: `<b>${LANG('new-title')}</b>`,
         div: newImDiv,
         buttons: ['Ok', 'Cancel'],

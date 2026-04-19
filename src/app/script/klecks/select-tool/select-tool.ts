@@ -29,7 +29,8 @@ export class SelectTool {
     private selection: MultiPolygon | undefined;
     private selectOperation: TBooleanOperation = 'new';
     private selectDragInputs: TVector2D[] = [];
-    private moveLastPos: TVector2D | undefined;
+    private moveStartPos: TVector2D | undefined;
+    private selectionAtMoveStart: MultiPolygon | undefined;
     private didMove: boolean = false; // was selection moved
 
     // ----------------------------------- public -----------------------------------
@@ -117,10 +118,21 @@ export class SelectTool {
         this.selectDragInputs = [pos];
     }
 
-    goSelect(pos: TVector2D): void {
+    goSelect(pos: TVector2D, isShiftPressed: boolean = false): void {
+        let p = pos;
+        if ((this.shape === 'ellipse' || this.shape === 'rect') && isShiftPressed && this.selectDragInputs.length > 0) {
+            const start = this.selectDragInputs[0];
+            const dx = pos.x - start.x;
+            const dy = pos.y - start.y;
+            const size = Math.min(Math.abs(dx), Math.abs(dy));
+            p = {
+                x: start.x + Math.sign(dx) * size,
+                y: start.y + Math.sign(dy) * size,
+            };
+        }
         this.selectDragInputs.push({
-            x: pos.x,
-            y: pos.y,
+            x: p.x,
+            y: p.y,
         });
     }
 
@@ -143,28 +155,36 @@ export class SelectTool {
 
     // --- moving selection ---
     startMoveSelect(pos: TVector2D): void {
-        this.moveLastPos = pos;
+        this.moveStartPos = pos;
+        this.selectionAtMoveStart = this.selection ? BB.copyObj(this.selection) : undefined;
         this.didMove = false;
     }
 
-    goMoveSelect(pos: TVector2D): void {
-        if (!this.moveLastPos) {
+    goMoveSelect(pos: TVector2D, isShiftPressed: boolean = false): void {
+        if (!this.moveStartPos) {
             return;
         }
         this.didMove = true;
-        const dx = Math.round(pos.x - this.moveLastPos.x);
-        const dy = Math.round(pos.y - this.moveLastPos.y);
-        if (this.selection) {
-            this.selection = translateMultiPolygon(this.selection, dx, dy);
+        let dx = pos.x - this.moveStartPos.x;
+        let dy = pos.y - this.moveStartPos.y;
+        if (isShiftPressed) {
+            // snap to 0°, 45°, 90°, 135° axes from start position
+            const angle = Math.atan2(dy, dx);
+            const snapAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            dx = Math.cos(snapAngle) * dist;
+            dy = Math.sin(snapAngle) * dist;
         }
-        this.moveLastPos = {
-            x: this.moveLastPos.x + dx,
-            y: this.moveLastPos.y + dy,
-        };
+        dx = Math.round(dx);
+        dy = Math.round(dy);
+        if (this.selectionAtMoveStart) {
+            this.selection = translateMultiPolygon(this.selectionAtMoveStart, dx, dy);
+        }
     }
 
     endMoveSelect(): void {
-        this.moveLastPos = undefined;
+        this.moveStartPos = undefined;
+        this.selectionAtMoveStart = undefined;
     }
 
     getDidMove(): boolean {

@@ -30,7 +30,6 @@ import {
 import { KeyListener, sameKeys } from './input/key-listener';
 import { PointerListener } from './input/pointer-listener';
 import {
-    canvasBounds,
     convertToAlphaChannelCanvas,
     copyCanvas,
     createCheckerCanvas,
@@ -61,10 +60,10 @@ import {
     unfocusAnyInput,
 } from './base/ui';
 import {
-    boundsInArea,
     clamp,
     dist,
     distSquared,
+    indexBoundsInArea,
     intDxy,
     isInsideRect,
     lenSquared,
@@ -79,7 +78,6 @@ import {
     updateBounds,
 } from './math/math';
 import { createCanvas } from './base/create-canvas';
-import { BbLog } from './base/bb-log';
 import { LocalStorage } from './base/local-storage';
 import { CoalescedExploder } from './input/event-chain/coalesced-exploder';
 import { NFingerTapper } from './input/event-chain/n-finger-tapper';
@@ -114,7 +112,6 @@ export const BB = {
     shareCanvas,
     handleClick,
     createSvg,
-    BbLog,
     LocalStorage,
     throwIfNull,
     nullToUndefined,
@@ -138,7 +135,7 @@ export const BB = {
     roundUneven,
     round,
     updateBounds,
-    boundsInArea,
+    indexBoundsInArea,
 
     // ---- line ----
     projectPointOnLine,
@@ -159,7 +156,6 @@ export const BB = {
     resizeCanvas,
     convertToAlphaChannelCanvas,
     freeCanvas,
-    canvasBounds,
 
     // ---- color ----
     HSV,

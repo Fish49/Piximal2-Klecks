@@ -15,7 +15,7 @@ export type TEaselProjectUpdaterParams<T extends string> = {
 export class EaselProjectUpdater<T extends string> {
     private readonly klCanvas: KlCanvas;
     private readonly easel: Easel<T>;
-    private readonly compositeCanvas = BB.canvas(1, 1);
+    private compositeCanvas: HTMLCanvasElement | undefined;
 
     // ----------------------------------- public -----------------------------------
     constructor(p: TEaselProjectUpdaterParams<T>) {
@@ -27,29 +27,44 @@ export class EaselProjectUpdater<T extends string> {
     update(): void {
         const width = this.klCanvas.getWidth();
         const height = this.klCanvas.getHeight();
+        const layers = this.klCanvas.getLayersFast();
+
+        // free resources if no compositing being done
+        if (layers.some((layer) => layer.compositeObj)) {
+            if (!this.compositeCanvas) {
+                this.compositeCanvas = BB.canvas(width, height);
+            }
+        } else {
+            if (this.compositeCanvas) {
+                BB.freeCanvas(this.compositeCanvas);
+                this.compositeCanvas = undefined;
+            }
+        }
+        const compositeCanvas = this.compositeCanvas;
         this.easel.setProject({
             width,
             height,
-            layers: this.klCanvas.getLayersFast().map((layer) => {
+            layers: layers.map((layer) => {
                 return {
-                    image: layer.compositeObj
-                        ? () => {
-                              if (
-                                  this.compositeCanvas.width != width ||
-                                  this.compositeCanvas.height != height
-                              ) {
-                                  this.compositeCanvas.width = width;
-                                  this.compositeCanvas.height = height;
+                    image:
+                        layer.compositeObj && compositeCanvas
+                            ? () => {
+                                  if (
+                                      compositeCanvas.width != width ||
+                                      compositeCanvas.height != height
+                                  ) {
+                                      compositeCanvas.width = width;
+                                      compositeCanvas.height = height;
+                                  }
+                                  const ctx = compositeCanvas.getContext('2d')!;
+                                  ctx.clearRect(0, 0, width, height);
+                                  ctx.drawImage(layer.canvas, 0, 0);
+                                  layer.compositeObj?.draw(
+                                      throwIfNull(compositeCanvas.getContext('2d')),
+                                  );
+                                  return compositeCanvas;
                               }
-                              const ctx = this.compositeCanvas.getContext('2d')!;
-                              ctx.clearRect(0, 0, width, height);
-                              ctx.drawImage(layer.canvas, 0, 0);
-                              layer.compositeObj?.draw(
-                                  throwIfNull(this.compositeCanvas.getContext('2d')),
-                              );
-                              return this.compositeCanvas;
-                          }
-                        : layer.canvas,
+                            : layer.canvas,
                     isVisible: layer.isVisible,
                     opacity: layer.opacity,
                     mixModeStr: layer.mixModeStr,
@@ -62,7 +77,9 @@ export class EaselProjectUpdater<T extends string> {
 
     // if you're not rendering easel for a while
     freeCompositeCanvas(): void {
-        this.compositeCanvas.width = 1;
-        this.compositeCanvas.height = 1;
+        if (this.compositeCanvas) {
+            BB.freeCanvas(this.compositeCanvas);
+            this.compositeCanvas = undefined;
+        }
     }
 }

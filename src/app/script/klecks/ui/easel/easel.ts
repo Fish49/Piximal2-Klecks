@@ -15,10 +15,9 @@ import {
     TEaselTool,
     TEaselToolTrigger,
 } from './easel.types';
-import { TBounds, TVector2D } from '../../../bb/bb-types';
+import { TVector2D } from '../../../bb/bb-types';
 import { zoomByStep } from '../project-viewport/utils/zoom-by-step';
 import { SelectionRenderer } from './selection-renderer';
-import { TVec4 } from '../../../bb/math/matrix';
 import { KL_CONFIG } from '../../kl-config';
 import { minimizeAngleDeg, snapAngleDeg } from '../../../bb/math/math';
 import {
@@ -30,6 +29,7 @@ import {
 } from './easel.config';
 import { isTransformEqual } from '../project-viewport/utils/is-transform-equal';
 import { blendTransform } from '../project-viewport/utils/blend-transform';
+import { getFitRectTransform } from '../project-viewport/utils/get-fit-rect-transform';
 import { css } from '../../../bb/base/base';
 import { TWheelEvent } from '../../../bb/input/event.types';
 
@@ -250,82 +250,11 @@ export class Easel<GToolId extends string> {
     }
 
     private getFitTransform(): TViewportTransform {
-        const oldTransform = this.viewport.getTransform();
-        // rotate
-        let newAngleDeg = oldTransform.angleDeg;
-        if (newAngleDeg === 45) {
-            // would otherwise get rounded to 90
-            newAngleDeg = 0;
-        }
-        newAngleDeg = snapAngleDeg(newAngleDeg, 90, 90);
-
-        //calc width and height of bounds
-        const projectWidth = this.project.width;
-        const projectHeight = this.project.height;
-        const canvasPointsArr = [
-            [0, 0], // top left
-            [projectWidth, 0], // top right
-            [projectWidth, projectHeight], // bottom right
-            [0, projectHeight], // bottom left
-            [projectWidth / 2, projectHeight / 2], // center
-        ];
-
-        //setup transformation matrix
-        let matrix = BB.Matrix.getIdentity();
-        matrix = BB.Matrix.multiplyMatrices(
-            matrix,
-            BB.Matrix.createRotationMatrix((newAngleDeg / 180) * Math.PI),
-        );
-
-        //rotate points
-        for (let i = 0; i < canvasPointsArr.length; i++) {
-            let coords: TVec4 = [canvasPointsArr[i][0], canvasPointsArr[i][1], 0, 1];
-            coords = BB.Matrix.multiplyMatrixAndPoint(matrix, coords);
-            canvasPointsArr[i][0] = coords[0];
-            canvasPointsArr[i][1] = coords[1];
-        }
-
-        const boundsObj: Partial<TBounds> = {};
-        for (let i = 0; i < canvasPointsArr.length; i++) {
-            if (boundsObj.x1 === undefined || canvasPointsArr[i][0] < boundsObj.x1) {
-                boundsObj.x1 = canvasPointsArr[i][0];
-            }
-            if (boundsObj.y1 === undefined || canvasPointsArr[i][1] < boundsObj.y1) {
-                boundsObj.y1 = canvasPointsArr[i][1];
-            }
-            if (boundsObj.x2 === undefined || canvasPointsArr[i][0] > boundsObj.x2) {
-                boundsObj.x2 = canvasPointsArr[i][0];
-            }
-            if (boundsObj.y2 === undefined || canvasPointsArr[i][1] > boundsObj.y2) {
-                boundsObj.y2 = canvasPointsArr[i][1];
-            }
-        }
-        const boundsWidth = boundsObj.x2! - boundsObj.x1!;
-        const boundsHeight = boundsObj.y2! - boundsObj.y1!;
-
-        //fit bounds
-        const padding = 0;
-        const { width: fitWidth } = BB.fitInto(
-            boundsWidth,
-            boundsHeight,
-            this.width - padding,
-            this.height - padding,
-            1,
-        );
-
-        //determine scale
-        const factor = Math.min(EASEL_MAX_SCALE, fitWidth / boundsWidth);
-
-        const viewportRect = { width: this.width, height: this.height };
-        const viewportCenterP = {
-            x: viewportRect.width / 2,
-            y: viewportRect.height / 2,
-        };
-        return createTransform(
-            viewportCenterP,
-            { x: projectWidth / 2, y: projectHeight / 2 },
-            factor,
-            newAngleDeg,
+        return getFitRectTransform(
+            { x: 0, y: 0, width: this.project.width, height: this.project.height },
+            this.viewport.getTransform(),
+            { width: this.width, height: this.height },
+            true,
         );
     }
 
@@ -557,7 +486,7 @@ export class Easel<GToolId extends string> {
             if (this.isFrozen) {
                 return;
             }
-            if (!this.rootEl.contains(e.target as Node)) {
+            if (!(e.target instanceof Node && this.rootEl.contains(e.target))) {
                 this.getActiveTool().onClickOutside?.();
             }
         };
@@ -585,20 +514,26 @@ export class Easel<GToolId extends string> {
                     );
                     this.scale(newScale / oldScale);
                 }
-                if (this.keyListener.comboOnlyContains(['shift', 'left', 'right', 'up', 'down'])) {
+                if (
+                    comboStr !== 'shift' &&
+                    this.keyListener.comboOnlyContains(['shift', 'left', 'right', 'up', 'down'])
+                ) {
+                    const arrowKey = comboStr
+                        .split('+')
+                        .find((item) => item !== 'shift')! as TArrowKey;
                     const activeTool = this.getActiveTool();
-                    if (!activeTool.onArrowKeys?.(keyStr as TArrowKey)) {
+                    if (!activeTool.onArrowKeys?.(arrowKey)) {
                         const stepSize = 40;
-                        if (keyStr === 'left') {
+                        if (arrowKey === 'left') {
                             this.translate(stepSize, 0);
                         }
-                        if (keyStr === 'right') {
+                        if (arrowKey === 'right') {
                             this.translate(-stepSize, 0);
                         }
-                        if (keyStr === 'up') {
+                        if (arrowKey === 'up') {
                             this.translate(0, stepSize);
                         }
-                        if (keyStr === 'down') {
+                        if (arrowKey === 'down') {
                             this.translate(0, -stepSize);
                         }
                     }

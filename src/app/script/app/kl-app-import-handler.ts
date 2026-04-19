@@ -44,7 +44,6 @@ export class KlAppImportHandler {
             importedImage.height <= 0
         ) {
             KL.popup({
-                target: this.klRootEl,
                 type: 'error',
                 message: LANG('import-broken-file'),
                 buttons: ['Ok'],
@@ -317,7 +316,6 @@ export class KlAppImportHandler {
             }
             if (!hasImage) {
                 KL.popup({
-                    target: this.klRootEl,
                     type: 'error',
                     message: LANG('clipboard-no-image'),
                     buttons: ['Ok'],
@@ -325,7 +323,6 @@ export class KlAppImportHandler {
             }
         } catch (error) {
             KL.popup({
-                target: this.klRootEl,
                 type: 'error',
                 message: LANG('clipboard-read-fail'),
                 buttons: ['Ok'],
@@ -416,7 +413,6 @@ export class KlAppImportHandler {
     async handleFileSelect(files: FileList, optionStr: TDropOption): Promise<void> {
         const showWarningPsdFlattened = () => {
             KL.popup({
-                target: this.klRootEl,
                 type: 'warning',
                 message: LANG('import-psd-unsupported') + '<br /><br />',
                 buttons: ['Ok'],
@@ -459,7 +455,6 @@ export class KlAppImportHandler {
                     if (f.size >= maxSizeBytes) {
                         // pretty likely to break stuff
                         KL.popup({
-                            target: this.klRootEl,
                             type: 'error',
                             message: 'File too big. Unable to import.<br /><br />',
                             buttons: ['Ok'],
@@ -473,7 +468,6 @@ export class KlAppImportHandler {
 
                     if (doShowLoader) {
                         KL.popup({
-                            target: this.klRootEl,
                             message: LANG('import-opening'),
                             callback: (result) => {
                                 loaderIsOpen = false;
@@ -509,7 +503,6 @@ export class KlAppImportHandler {
                                             closeLoader();
                                         }
                                         KL.popup({
-                                            target: this.klRootEl,
                                             type: 'error',
                                             message:
                                                 LANG('import-psd-too-large').replace(
@@ -577,7 +570,6 @@ export class KlAppImportHandler {
                                 } catch (e) {
                                     closeLoader?.();
                                     KL.popup({
-                                        target: this.klRootEl,
                                         type: 'error',
                                         message: 'Failed to load PSD.<br /><br />',
                                         buttons: ['Ok'],
@@ -601,7 +593,6 @@ export class KlAppImportHandler {
         }
         if (hasUnsupportedFile) {
             KL.popup({
-                target: this.klRootEl,
                 message: LANG('import-unsupported-file'),
                 type: 'error',
                 buttons: ['OK'],

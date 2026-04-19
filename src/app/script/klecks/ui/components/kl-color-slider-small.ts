@@ -4,6 +4,7 @@ import { TRgb } from '../../kl-types';
 import { PointerListener } from '../../../bb/input/pointer-listener';
 import { HSV } from '../../../bb/color/color';
 import { css } from '../../../bb/base/base';
+import { addHueStops } from '../../utils/hue-gradient';
 
 /**
  * a small color slider
@@ -92,21 +93,8 @@ export class KlColorSliderSmall {
         canvasH.style.cursor = 'ew-resize';
         (() => {
             const ctx = BB.ctx(canvasH);
-
             const gradH = ctx.createLinearGradient(0, 0, p.width, 0);
-            for (let i = 0; i < 1; i += 0.01) {
-                const col = BB.ColorConverter.toRGB(new BB.HSV(i * 360, 100, 100));
-                gradH.addColorStop(
-                    i,
-                    'rgba(' +
-                        parseInt('' + col.r) +
-                        ', ' +
-                        parseInt('' + col.g) +
-                        ', ' +
-                        parseInt('' + col.b) +
-                        ', 1)',
-                );
-            }
+            addHueStops(gradH);
             ctx.fillStyle = gradH;
             ctx.fillRect(0, 0, p.width, p.heightH);
         })();

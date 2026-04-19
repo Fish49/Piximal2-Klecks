@@ -27,7 +27,7 @@ export class SaveToComputer {
         private onSaved: () => void,
     ) {}
 
-    async save(format?: 'psd' | 'layers' | 'png'): Promise<void> {
+    async save(format?: 'psd' | 'layers' | 'png' | 'jpg'): Promise<void> {
         if (!format) {
             format = this.getExportType();
         }
@@ -43,6 +43,17 @@ export class SaveToComputer {
                 //fallback for old browsers
                 alert('could not save');
                 throw new Error('failed png export');
+            }
+        } else if (format === 'jpg') {
+            const extension = 'jpg';
+            const mimeType = 'image/jpeg';
+            const filename = BB.getDate() + KL_CONFIG.filenameBase + '.' + extension;
+            const fullCanvas = this.klCanvas.getCompleteCanvas(1);
+            try {
+                await this.saveImage(fullCanvas, filename, mimeType, this.showSaveDialog);
+            } catch (error) {
+                alert('could not save');
+                throw new Error('failed jpg export');
             }
         } else if (format === 'layers') {
             const extension = 'png';

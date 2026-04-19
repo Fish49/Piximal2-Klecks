@@ -1,6 +1,5 @@
 /**
  * from stabilizer dropdown value to line-smoothing value
- * @param s
  */
 export function translateSmoothing(s: number): number {
     if (s == 1) {

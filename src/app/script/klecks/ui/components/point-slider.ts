@@ -17,6 +17,8 @@ export class PointSlider {
         width: number;
         pointSize: number;
         callback: (value: number, isFirst: boolean, isLast: boolean) => void;
+        // if true, do nothing
+        getDoIgnore: () => boolean;
     }) {
         this.rootEl = BB.el({
             css: {
@@ -36,7 +38,6 @@ export class PointSlider {
             className: 'kl-point-slider__point',
         });
         let sliderPos: number;
-        let isDragging = false;
 
         //sliderPoint
         const touchAreaEl = BB.el({
@@ -60,6 +61,7 @@ export class PointSlider {
         };
 
         {
+            let isDragging = false;
             let isFirst: boolean;
             sliderPos = BB.clamp(p.init * (p.width - p.pointSize), 0, p.width - p.pointSize);
             css(this.sliderPoint, {
@@ -73,13 +75,21 @@ export class PointSlider {
                 target: this.sliderPoint,
                 fixScribble: true,
                 onPointer: (event): void => {
-                    if (event.type === 'pointerdown' && event.button === 'left') {
+                    if (
+                        event.type === 'pointerdown' &&
+                        event.button === 'left' &&
+                        !p.getDoIgnore()
+                    ) {
                         isFirst = true;
                         isDragging = true;
                         imaginaryPos = sliderPos;
                         redrawPoint();
                         event.eventStopPropagation();
-                    } else if (event.type === 'pointermove' && event.button === 'left') {
+                    } else if (
+                        event.type === 'pointermove' &&
+                        event.button === 'left' &&
+                        isDragging
+                    ) {
                         event.eventStopPropagation();
                         imaginaryPos = imaginaryPos + event.dX;
                         sliderPos = parseInt('' + BB.clamp(imaginaryPos, 0, p.width - p.pointSize));
@@ -87,7 +97,7 @@ export class PointSlider {
                         p.callback(getValue(), isFirst, false);
                         isFirst = false;
                     }
-                    if (event.type === 'pointerup') {
+                    if (event.type === 'pointerup' && isDragging) {
                         event.eventStopPropagation();
                         isDragging = false;
                         redrawPoint();

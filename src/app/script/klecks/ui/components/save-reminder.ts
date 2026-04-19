@@ -98,7 +98,6 @@ export class SaveReminder {
         const storageUi = new BrowserStorageUi({
             projectStore: this.projectStore,
             getProject: this.getProject,
-            klRootEl: document.body,
             applyUncommitted: this.applyUncommitted,
             options: {
                 hideClearButton: true,
@@ -111,7 +110,6 @@ export class SaveReminder {
 
         KL.popup({
             type: 'warning',
-            target: document.body,
             message: `<b>${LANG('save-reminder-title')}</b>`,
             div: contentEl,
             ignoreBackground: true,

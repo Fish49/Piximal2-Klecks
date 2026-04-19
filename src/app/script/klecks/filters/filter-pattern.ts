@@ -1,10 +1,5 @@
 import { BB } from '../../bb/bb';
-import {
-    TFilterApply,
-    TFilterGetDialogParam,
-    TFilterGetDialogResult,
-    TKlBasicLayer,
-} from '../kl-types';
+import { TFilterApply, TFilterGetDialogParam, TFilterGetDialogResult, TKlBasicLayer } from '../kl-types';
 import { input } from '../ui/components/input';
 import { KlSlider } from '../ui/components/kl-slider';
 import { LANG } from '../../language/language';
@@ -16,6 +11,7 @@ import { css, throwIfNull } from '../../bb/base/base';
 import { testIsSmall } from '../ui/utils/test-is-small';
 import { getPreviewHeight, getPreviewWidth, MEDIUM_PREVIEW } from '../ui/utils/preview-size';
 import { canvasToLayerTiles } from '../history/push-helpers/canvas-to-layer-tiles';
+import { getCanvasBounds } from '../../bb/base/canvas';
 
 export type TFilterPatternInput = {
     x: number;
@@ -126,6 +122,7 @@ function drawPattern(context: CanvasRenderingContext2D, settings: TFilterPattern
 
     context.clearRect(0, 0, context.canvas.width, context.canvas.height);
     context.translate(settings.offsetX - blendOffsetX, settings.offsetY - blendOffsetY);
+    // InvalidStateError: The object is in an invalid state.
     context.fillStyle = throwIfNull(context.createPattern(finalPatternCanvas, 'repeat'));
     context.fillRect(
         -settings.offsetX + blendOffsetX,
@@ -158,7 +155,7 @@ export const filterPattern = {
         let lastDrawnSettings: TFilterPatternInput | undefined;
 
         // determine bounds
-        const bounds = BB.canvasBounds(context);
+        const bounds = getCanvasBounds(context);
         // adjust settings according to bounds
         if (
             // use layer bounds if:

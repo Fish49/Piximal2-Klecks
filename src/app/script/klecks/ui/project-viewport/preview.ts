@@ -262,7 +262,6 @@ export class Preview {
         });
         this.pointerChain.setChainOut((e) => {
             if (e.button && ['left', 'middle'].includes(e.button)) {
-                // debugOut(JSON.stringify(e));
                 this.transformCanvas({
                     type: 'translate',
                     x: e.dX,

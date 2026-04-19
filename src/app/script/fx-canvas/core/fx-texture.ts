@@ -158,8 +158,21 @@ export class FxTexture {
         gl.framebuffer = gl.framebuffer || gl.createFramebuffer();
         gl.bindFramebuffer(gl.FRAMEBUFFER, gl.framebuffer);
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.id, 0);
-        if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
-            throw new Error('incomplete framebuffer');
+        const fbStatus = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+        if (fbStatus !== gl.FRAMEBUFFER_COMPLETE) {
+            if (this.id === null) {
+                throw new Error('incomplete framebuffer: texture already destroyed');
+            }
+            if (gl.isContextLost()) {
+                throw new Error('incomplete framebuffer: context lost');
+            }
+            if (this.width === 0 || this.height === 0) {
+                throw new Error(`incomplete framebuffer: texture has zero dimension (${this.width}x${this.height})`);
+            }
+            if (fbStatus === gl.FRAMEBUFFER_UNSUPPORTED) {
+                throw new Error(`incomplete framebuffer: unsupported format/type combination (format=0x${this.format.toString(16)}, type=0x${this.type.toString(16)})`);
+            }
+            throw new Error(`incomplete framebuffer: status 0x${fbStatus.toString(16)}`);
         }
         gl.viewport(0, 0, this.width, this.height);
 

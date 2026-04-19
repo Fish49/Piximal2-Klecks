@@ -147,7 +147,6 @@ export function showImportAsLayerDialog(params: {
     });
 
     showModal({
-        target: params.target,
         message: `<b>${LANG('import-as-layer-title')}</b>`,
         div: div,
         style: isSmall

@@ -1,12 +1,16 @@
-import { TBounds } from '../bb-types';
 import { applyToPoint, Matrix } from 'transformation-matrix';
+import { TCoordinateBounds } from '../bb-types';
 
-export function transformBounds(bounds: TBounds, transform: Matrix): TBounds {
+export function transformCoordinateBounds(
+    bounds: TCoordinateBounds,
+    transform: Matrix,
+): TCoordinateBounds {
     const p1 = applyToPoint(transform, { x: bounds.x1, y: bounds.y1 });
     const p2 = applyToPoint(transform, { x: bounds.x2, y: bounds.y1 });
     const p3 = applyToPoint(transform, { x: bounds.x2, y: bounds.y2 });
     const p4 = applyToPoint(transform, { x: bounds.x1, y: bounds.y2 });
     return {
+        type: 'coordinate',
         x1: Math.min(p1.x, p2.x, p3.x, p4.x),
         y1: Math.min(p1.y, p2.y, p3.y, p4.y),
         x2: Math.max(p1.x, p2.x, p3.x, p4.x),

@@ -210,49 +210,56 @@ export class KlRecoveryManager {
     }
 
     async getRecovery(): Promise<TDeserializedKlStorageProject | undefined> {
-        // is there a tabId?
-        const initialTabId: number | undefined = hashToTabId(getHash());
-        if (initialTabId === undefined) {
-            this.noRecoveryReason = 'noTabIdHash';
-            // we get a tabId later
-            return undefined;
-        }
+        try {
+            // is there a tabId?
+            const initialTabId: number | undefined = hashToTabId(getHash());
+            if (initialTabId === undefined) {
+                this.noRecoveryReason = 'noTabIdHash';
+                // we get a tabId later
+                return undefined;
+            }
 
-        // is there another tab with the same tabId?
-        const openTabIds = await this.getIdsFromTabs();
-        if (openTabIds.includes(initialTabId)) {
-            this.noRecoveryReason = 'alreadyOpened';
-            // Already exists -> unset tabId. Nothing to load.
-            this.setHash(undefined);
-            return undefined;
-        }
-        // is id in storage?
-        const storedIds = await getIdsFromRecoveryStore();
-        if (!storedIds.includes(initialTabId)) {
-            this.noRecoveryReason = 'idNotFound';
-            // not found -> unset tabId and abort
-            this.setHash(undefined);
-            return undefined;
-        }
+            // is there another tab with the same tabId?
+            const openTabIds = await this.getIdsFromTabs();
+            if (openTabIds.includes(initialTabId)) {
+                this.noRecoveryReason = 'alreadyOpened';
+                // Already exists -> unset tabId. Nothing to load.
+                this.setHash(undefined);
+                return undefined;
+            }
+            // is id in storage?
+            const storedIds = await getIdsFromRecoveryStore();
+            if (!storedIds.includes(initialTabId)) {
+                this.noRecoveryReason = 'idNotFound';
+                // not found -> unset tabId and abort
+                this.setHash(undefined);
+                return undefined;
+            }
 
-        // change id of drawing and tab
-        const newId = genNewId(storedIds);
-        if (!(await changeRecoveryId(initialTabId, newId))) {
-            this.noRecoveryReason = 'idChangeFailed';
-            this.setHash(undefined);
-            return undefined;
-        }
-        this.setHash(newId); // update hash
+            // change id of drawing and tab
+            const newId = genNewId(storedIds);
+            if (!(await changeRecoveryId(initialTabId, newId))) {
+                this.noRecoveryReason = 'idChangeFailed';
+                this.setHash(undefined);
+                return undefined;
+            }
+            this.setHash(newId); // update hash
 
-        const result = await getRecovery(newId);
-        if (result) {
-            this.tabId = newId;
+            const result = await getRecovery(newId);
+            if (result) {
+                this.tabId = newId;
+            }
+            setTimeout(() => {
+                // don't disrupt loading
+                removeOrphans();
+            });
+            return result;
+        } finally {
+            setTimeout(() => {
+                // don't disrupt loading
+                removeOrphans();
+            }, 2000);
         }
-        setTimeout(() => {
-            // don't disrupt loading
-            removeOrphans();
-        });
-        return result;
     }
 
     setKlHistory(klHistory: KlHistory) {
@@ -302,6 +309,8 @@ export class KlRecoveryManager {
                 setTimeout(() => {
                     throw e;
                 });
+            } finally {
+                this.isStoring = false;
             }
             if (isFreshDrawing) {
                 this.setHash(this.tabId);
@@ -309,7 +318,6 @@ export class KlRecoveryManager {
             }
             startTime = new Date().getTime();
             lastStoredChangeCount = changeCount;
-            this.isStoring = false;
         });
     }
 

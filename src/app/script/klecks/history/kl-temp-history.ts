@@ -25,8 +25,8 @@ export class KlTempHistory {
     constructor() {}
 
     push(entry: TTempHistoryEntry): void {
-        if (this.currentIndex < this.entries.length - 1) {
-            this.entries.splice(this.currentIndex + 1);
+        while (this.currentIndex < this.entries.length - 1) {
+            this.entries.pop();
         }
         this.entries.push(entry);
         this.currentIndex = this.entries.length - 1;
@@ -41,7 +41,7 @@ export class KlTempHistory {
     }
 
     canDecreaseIndex(): boolean {
-        return this.currentIndex > -1;
+        return this.currentIndex > 0;
     }
 
     canIncreaseIndex(): boolean {

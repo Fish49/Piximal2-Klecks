@@ -647,8 +647,11 @@ export class KlApp {
                 eyedropper: new EaselEyedropper({
                     onPick: (p) => {
                         const color = this.klCanvas.getColorAt(p.x, p.y);
-                        brushSettingService.setColor(color);
-                        return color;
+                        if (color) {
+                            brushSettingService.setColor(color);
+                            return color;
+                        }
+                        return brushSettingService.getColor();
                     },
                     onPickEnd: () => {
                         if (
@@ -865,7 +868,6 @@ export class KlApp {
                                     const doOverwrite = await new Promise<boolean>(
                                         (resolve, reject) => {
                                             showModal({
-                                                target: document.body,
                                                 type: 'warning',
                                                 message: LANG('file-storage-overwrite-confirm'),
                                                 buttons: [LANG('file-storage-overwrite'), 'Cancel'],
@@ -953,6 +955,10 @@ export class KlApp {
                 if (['delete', 'backspace'].includes(comboStr)) {
                     clearLayer(true);
                 }
+                if (comboStr === 'ctrl+shift+e' || comboStr === 'shift+ctrl+e') {
+                    event.preventDefault();
+                    this.layersUi.advancedMergeDialog();
+                }
                 if (comboStr === 'shift+e') {
                     event.preventDefault();
                     currentBrushUi.toggleEraser?.();
@@ -967,13 +973,18 @@ export class KlApp {
                 }
                 if (comboStr === 'b') {
                     event.preventDefault();
-                    applyUncommitted();
                     const prevMode = this.easel.getTool();
+                    const prevMainTabId = mainTabRow?.getOpenedTabId();
+                    applyUncommitted();
                     this.easel.setTool('brush');
                     this.toolspaceToolRow.setActive('brush');
                     mainTabRow?.open('brush');
                     updateMainTabVisibility();
-                    brushTabRow.open(prevMode === 'brush' ? getNextBrushId() : currentBrushId);
+                    brushTabRow.open(
+                        prevMode === 'brush' && prevMainTabId === 'brush'
+                            ? getNextBrushId()
+                            : currentBrushId,
+                    );
                 }
                 if (comboStr === 'g') {
                     event.preventDefault();
@@ -1003,11 +1014,21 @@ export class KlApp {
                 }
                 if (comboStr === 'l') {
                     event.preventDefault();
+                    const prevTool = this.easel.getTool();
+                    const prevSelectMode = klAppSelect.getSelectMode();
+                    const prevMainTabId = mainTabRow?.getOpenedTabId();
                     applyUncommitted();
                     this.easel.setTool('select');
                     this.toolspaceToolRow.setActive('select');
                     mainTabRow?.open('select');
                     updateMainTabVisibility();
+                    if (
+                        prevTool === 'select' &&
+                        prevSelectMode === 'select' &&
+                        prevMainTabId === 'select'
+                    ) {
+                        klAppSelect.getSelectUi().setMode('transform');
+                    }
                 }
                 if (comboStr === 'x') {
                     event.preventDefault();
@@ -1138,7 +1159,6 @@ export class KlApp {
                             closeFunc();
                         };
                         KL.popup({
-                            target: this.rootEl,
                             message: '<b>' + LANG('upload-failed') + '</b>',
                             div: BB.el({
                                 content: [
@@ -1159,7 +1179,6 @@ export class KlApp {
                     };
 
                     KL.popup({
-                        target: this.rootEl,
                         message: LANG('submit-prompt'),
                         buttons: [LANG('submit'), 'Cancel'],
                         callback: async (result) => {
@@ -1697,7 +1716,6 @@ export class KlApp {
         const onOpenBrowserStorage = async () => {
             const showFailureMessage = () => {
                 KL.popup({
-                    target: this.rootEl,
                     message: LANG('file-storage-open-failed'),
                     type: 'error',
                 });
@@ -1729,7 +1747,6 @@ export class KlApp {
                 if (meta && openedProjectIds.includes(meta.projectId)) {
                     doOpen = await new Promise<boolean>((resolve, reject) => {
                         showModal({
-                            target: document.body,
                             message: LANG('file-storage-open-confirmation'),
                             buttons: [LANG('file-storage-open'), 'Cancel'],
                             callback: async (result) => {
@@ -1751,7 +1768,6 @@ export class KlApp {
 
             let closeLoader: (() => void) | undefined;
             KL.popup({
-                target: this.rootEl,
                 message: LANG('loading'),
                 callback: (result) => {
                     closeLoader = undefined;
@@ -2005,11 +2021,11 @@ export class KlApp {
                     title: LANG('layers'),
                     image: tabLayersImg,
                     onOpen: () => {
+                        this.layersUi.setIsVisible(true);
                         this.layersUi.update();
-                        this.layersUi.getElement().style.display = 'block';
                     },
                     onClose: () => {
-                        this.layersUi.getElement().style.display = 'none';
+                        this.layersUi.setIsVisible(false);
                     },
                     css: {
                         minWidth: '45px',

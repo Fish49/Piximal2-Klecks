@@ -807,7 +807,7 @@
   'filter-transform': {
     hint: 'more generic transformation. Commonly known as "free transform"',
     original: 'Transform',
-    value: 'Transformier.'
+    value: 'Transform.'
   },
   'filter-bright-contrast': {
     hint: 'brightness contrast',
@@ -944,7 +944,7 @@
   'filter-transform-empty-selection': {
     hint: 'nothing on the layer, in selected area (via select tool), just transparency',
     original: 'Layer is empty in selected area.',
-    value: ''
+    value: 'Ebene ist leer im gewählten Bereich'
   },
   'filter-transform-title': {
     hint: 'same as the button, but can be longer',
@@ -1034,8 +1034,8 @@
   },
   'filter-applied': {
     hint: 'used like this: „Invert“ applied. Informs that a filter was applied',
-    original: 'applied',
-    value: 'angewendet'
+    original: '"{x}" applied',
+    value: '„{x}" angewendet'
   },
   'filter-tilt-shift-title': {
     hint: 'same as the button, but can be longer',
@@ -1457,7 +1457,7 @@
   },
   'select-transform': {
     original: 'Transform',
-    value: 'Transformier.'
+    value: 'Transform.'
   },
   'select-lasso': {
     original: 'Lasso',
@@ -1498,6 +1498,10 @@
   'select-erase': {
     original: 'Erase',
     value: 'Leeren'
+  },
+  'select-transform-warp': {
+    original: 'Warp',
+    value: 'Verzerren'
   },
   'select-transform-clone': {
     original: 'Clone',

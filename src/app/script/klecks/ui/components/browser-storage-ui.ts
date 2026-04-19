@@ -16,7 +16,6 @@ import { copyCanvas } from '../../../bb/base/canvas';
 export type TBrowserStorageUiParams = {
     projectStore: ProjectStore;
     getProject: () => TKlProject;
-    klRootEl: HTMLElement;
     applyUncommitted: () => void;
     options?: { hideClearButton?: boolean; isFocusable?: boolean }; // isFocusable default = false
     onOpen?: () => void;
@@ -41,7 +40,6 @@ export class BrowserStorageUi {
     private projectStore: ProjectStore;
     private readonly getProject: () => TKlProject;
     private readonly onStored: () => void;
-    private readonly klRootEl: HTMLElement;
     private readonly applyUncommitted: () => void;
     private options: { hideClearButton?: boolean; isFocusable?: boolean } | undefined;
     private readonly onOpen: (() => void) | undefined;
@@ -114,7 +112,6 @@ export class BrowserStorageUi {
         if (meta && meta.projectId !== project.projectId) {
             const doOverwrite = await new Promise<boolean>((resolve, reject) => {
                 showModal({
-                    target: document.body,
                     type: 'warning',
                     message: LANG('file-storage-overwrite-confirm'),
                     buttons: [LANG('file-storage-overwrite'), 'Cancel'],
@@ -150,7 +147,6 @@ export class BrowserStorageUi {
         } catch (e) {
             this.resetButtons();
             KL.popup({
-                target: this.klRootEl,
                 type: 'error',
                 message: [
                     `${LANG('file-storage-failed-1')}<ul>`,
@@ -169,7 +165,6 @@ export class BrowserStorageUi {
 
     private async clear(): Promise<void> {
         showModal({
-            target: document.body,
             type: 'warning',
             message: LANG('file-storage-clear-prompt'),
             buttons: [LANG('file-storage-clear'), 'Cancel'],
@@ -189,7 +184,6 @@ export class BrowserStorageUi {
                 } catch (e) {
                     this.resetButtons();
                     KL.popup({
-                        target: this.klRootEl,
                         type: 'error',
                         message: LANG('file-storage-failed-clear'),
                         buttons: ['Ok'],
@@ -219,7 +213,6 @@ export class BrowserStorageUi {
         this.projectStore = p.projectStore;
         this.getProject = p.getProject;
         this.onStored = p.onStored;
-        this.klRootEl = p.klRootEl;
         this.applyUncommitted = p.applyUncommitted;
         this.options = p.options;
         this.onOpen = p.onOpen;

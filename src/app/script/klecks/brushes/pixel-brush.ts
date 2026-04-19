@@ -1,6 +1,6 @@
 import { BB } from '../../bb/bb';
 import { TPressureInput, TRgb } from '../kl-types';
-import { TBounds, TRect, TVector2D } from '../../bb/bb-types';
+import { TIndexBounds, TRect, TVector2D } from '../../bb/bb-types';
 import { BezierLine } from '../../bb/math/line';
 import { ERASE_COLOR } from './erase-color';
 import { throwIfNull } from '../../bb/base/base';
@@ -10,7 +10,13 @@ import { getChangedTiles, updateChangedTiles } from '../history/push-helpers/cha
 import { canvasAndChangedTilesToLayerTiles } from '../history/push-helpers/canvas-to-layer-tiles';
 import { MultiPolygon } from 'polygon-clipping';
 import { getSelectionPath2d } from '../../bb/multi-polygon/get-selection-path-2d';
-import { boundsOverlap, boundsToRect, integerBounds, updateBounds } from '../../bb/math/math';
+import {
+    boundsToRect,
+    fixBounds,
+    intersectBounds,
+    rectToBounds,
+    updateBounds,
+} from '../../bb/math/math';
 import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bounds';
 
 export class PixelBrush {
@@ -27,7 +33,6 @@ export class PixelBrush {
     private settingIsEraser: boolean = false;
     private settingUseDither: boolean = true;
     private inputIsDrawing: boolean = false;
-    private lineToolLastDot: number = 0;
     private lastInput: TPressureInput = { x: 0, y: 0, pressure: 0 };
     private lastInput2: TPressureInput = { x: 0, y: 0, pressure: 0 };
     private bezierLine: BezierLine | null = null;
@@ -63,7 +68,7 @@ export class PixelBrush {
     private ctxClone: CanvasRenderingContext2D = {} as CanvasRenderingContext2D;
 
     // area that changed since last redraw
-    private redrawBounds: TBounds | undefined;
+    private redrawBounds: TIndexBounds | undefined;
     // changed tiles that will be pushed to history
     private historyTiles: boolean[] = [];
 
@@ -71,17 +76,18 @@ export class PixelBrush {
 
     private selection: MultiPolygon | undefined;
     private selectionPath: Path2D | undefined;
-    private selectionBounds: TBounds | undefined;
+    private selectionBounds: TIndexBounds | undefined;
 
-    private updateChangedTiles(bounds: TBounds) {
+    private updateChangedTiles(bounds: TIndexBounds) {
         // fix bounds
         bounds = {
+            type: 'index',
             x1: Math.min(bounds.x1, bounds.x2),
             y1: Math.min(bounds.y1, bounds.y2),
             x2: Math.max(bounds.x1, bounds.x2),
             y2: Math.max(bounds.y1, bounds.y2),
         };
-        const boundsWithinSelection = boundsOverlap(bounds, this.selectionBounds);
+        const boundsWithinSelection = intersectBounds(bounds, this.selectionBounds);
         if (!boundsWithinSelection) {
             return;
         }
@@ -111,7 +117,7 @@ export class PixelBrush {
         if (!this.redrawBounds) {
             return;
         }
-        const boundsRect = boundsToRect(this.redrawBounds, true);
+        const boundsRect = boundsToRect(this.redrawBounds);
         this.context.save();
         this.context.clearRect(boundsRect.x, boundsRect.y, boundsRect.width, boundsRect.height);
         this.context.drawImage(
@@ -141,7 +147,10 @@ export class PixelBrush {
         ) {
             this.ditherCtx.fillRect(this.ditherArr[i][0], this.ditherArr[i][1], 1, 1);
         }
-        this.ditherPattern = throwIfNull(this.context.createPattern(this.ditherCanvas, 'repeat'));
+        this.ditherPattern = throwIfNull(
+            // InvalidStateError: The object is in an invalid state.
+            this.context.createPattern(this.ditherCanvas, 'repeat'),
+        );
     }
 
     /**
@@ -182,12 +191,6 @@ export class PixelBrush {
 
         const dist = BB.dist(p1.x, p1.y, p4.x, p4.y);
         if (!isOverThreshold || dist < 7) {
-            this.updateChangedTiles({
-                x1: p1.x,
-                y1: p1.y,
-                x2: p4.x,
-                y2: p4.y,
-            });
             this.plotLine(p1.x, p1.y, p4.x, p4.y, true);
             return;
         }
@@ -207,12 +210,6 @@ export class PixelBrush {
         }
 
         for (let i = 0; i < n; i++) {
-            this.updateChangedTiles({
-                x1: Math.round(pointArr[i].x),
-                y1: Math.round(pointArr[i].y),
-                x2: Math.round(pointArr[i + 1].x),
-                y2: Math.round(pointArr[i + 1].y),
-            });
             this.plotLine(
                 Math.round(pointArr[i].x),
                 Math.round(pointArr[i].y),
@@ -230,12 +227,7 @@ export class PixelBrush {
             width: Math.round(size * 2),
             height: Math.round(size * 2),
         };
-        this.updateChangedTiles({
-            x1: rect.x,
-            y1: rect.y,
-            x2: rect.x + rect.width,
-            y2: rect.y + rect.height,
-        });
+        this.updateChangedTiles(rectToBounds(rect, 'index'));
 
         this.ctxClone.save();
         if (this.settingIsEraser) {
@@ -337,6 +329,15 @@ export class PixelBrush {
      * bresenheim line drawing
      */
     private plotLine(x0: number, y0: number, x1: number, y1: number, skipFirst: boolean): void {
+        this.updateChangedTiles(
+            fixBounds({
+                type: 'index',
+                x1: x0,
+                y1: y0,
+                x2: x1,
+                y2: y1,
+            }),
+        );
         x0 = Math.floor(x0);
         y0 = Math.floor(y0);
         x1 = Math.floor(x1);
@@ -348,7 +349,6 @@ export class PixelBrush {
         const sY = y0 < y1 ? 1 : -1;
         let err = dX + dY;
 
-         
         while (true) {
             if (skipFirst) {
                 skipFirst = false;
@@ -382,7 +382,7 @@ export class PixelBrush {
         this.selection = this.klHistory.getComposed().selection.value;
         this.selectionPath = this.selection ? getSelectionPath2d(this.selection) : undefined;
         this.selectionBounds = this.selection
-            ? integerBounds(getMultiPolyBounds(this.selection))
+            ? getMultiPolyBounds(this.selection, 'index')
             : undefined;
         this.historyTiles = [];
         this.redrawBounds = undefined;
@@ -404,7 +404,6 @@ export class PixelBrush {
         this.selectionPath && this.ctxClone.clip(this.selectionPath);
         this.drawDot(x, y, localSize, localOpacity);
         this.ctxClone.restore();
-        this.lineToolLastDot = localSize * this.settingSpacing;
         this.lastInput.x = x;
         this.lastInput.y = y;
         this.lastInput.pressure = p;
@@ -435,6 +434,9 @@ export class PixelBrush {
     }
 
     endLine(): void {
+        if (!this.inputIsDrawing) {
+            return;
+        }
         this.selection = this.klHistory.getComposed().selection.value;
         this.selectionPath = this.selection ? getSelectionPath2d(this.selection) : undefined;
         const localSize = this.settingHasSizePressure

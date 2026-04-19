@@ -136,7 +136,6 @@ export class TextToolFontUI {
 
             if (failedToLoadFilenames.length > 0) {
                 showModal({
-                    target: document.body,
                     message: BB.el({
                         content: [
                             LANG('text-failed-import'),

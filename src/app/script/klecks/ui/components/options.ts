@@ -12,6 +12,7 @@ export class Options<IdType> {
         el: HTMLElement;
     }[];
     private readonly onChange: ((id: IdType) => void) | undefined;
+    private readonly onBeforeChange: ((id: IdType) => boolean) | undefined;
 
     private getIndex(): number {
         for (let i = 0; i < this.optionArr.length; i++) {
@@ -61,6 +62,7 @@ export class Options<IdType> {
 
         if (p.onChange) {
             this.onChange = p.onChange;
+            this.onBeforeChange = p.onBeforeChange;
         }
         this.optionArr = [];
         this.selectedId = 'initialId' in p && p.initId !== undefined ? p.initId : p.optionArr[0].id;
@@ -90,7 +92,7 @@ export class Options<IdType> {
                     className: classArr.join(' '),
                     onClick: () => {
                         if (this.selectedId !== optionObj.id) {
-                            if (p.onBeforeChange && !p.onBeforeChange(optionObj.id)) {
+                            if (this.onBeforeChange && !this.onBeforeChange(optionObj.id)) {
                                 return;
                             }
 
@@ -139,6 +141,9 @@ export class Options<IdType> {
 
     setValue(val: IdType, skipEmit?: boolean): void {
         if (this.selectedId === val) {
+            return;
+        }
+        if (this.onBeforeChange && !this.onBeforeChange(val)) {
             return;
         }
         this.selectedId = val;

@@ -162,6 +162,7 @@ export function dateDayDifference(dateA: string | Date, dateB: string | Date): n
 }
 
 export function copyObj<T>(obj: T): T {
+    // structuredClone became available around 2022. Let's wait a bit longer for it.
     return JSON.parse(JSON.stringify(obj));
 }
 

@@ -30,6 +30,7 @@ export class DynamicModal {
 
         //size and position
         width: number;
+        height?: number;
         isMaxHeight: boolean; // todo - not implemented
     }) {
         DIALOG_COUNTER.increase();
@@ -74,7 +75,11 @@ export class DynamicModal {
                 width: BB.isCssMinMaxSupported()
                     ? 'min(calc(100% - 40px), ' + (p.width ? p.width : 400) + 'px)'
                     : (p.width ? p.width : 400) + 'px',
-                height: 'calc(100% - 40px)',
+                height: p.height
+                    ? BB.isCssMinMaxSupported()
+                        ? 'min(calc(100% - 40px), ' + p.height + 'px)'
+                        : p.height + 'px'
+                    : 'calc(100% - 40px)',
                 borderRadius: '10px',
                 overflow: 'hidden',
             },

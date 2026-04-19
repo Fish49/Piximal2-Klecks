@@ -6,7 +6,7 @@ import { Matrix } from 'transformation-matrix';
 import { createMatrixFromTransform } from '../../../bb/transform/create-matrix-from-transform';
 import { getSvgPathD } from '../../../bb/multi-polygon/get-selection-path-2d';
 import { transformMultiPolygon } from '../../../bb/multi-polygon/transform-multi-polygon';
-import { applyPolygonClipping } from '../../../bb/multi-polygon/apply-polygon-clipping';
+import { clipMultiPolygon } from '../../../bb/multi-polygon/apply-polygon-clipping';
 
 export type TSelectionRendererParams = {
     transform: TViewportTransform;
@@ -54,14 +54,12 @@ export class SelectionRenderer {
         // Firefox has bad performance when zoomed in far (guess: it doesn't clip the path)
         // So we clip manually.
         const clipPadding = 10;
-        const clippedSelection = applyPolygonClipping('intersection', transformedSelection, [
-            [
-                [-clipPadding, -clipPadding],
-                [this.viewportWidth + clipPadding, -clipPadding],
-                [this.viewportWidth + clipPadding, this.viewportHeight + clipPadding],
-                [-clipPadding, this.viewportHeight + clipPadding],
-                [-clipPadding, -clipPadding],
-            ],
+        const clippedSelection = clipMultiPolygon(transformedSelection, [
+            [-clipPadding, -clipPadding],
+            [this.viewportWidth + clipPadding, -clipPadding],
+            [this.viewportWidth + clipPadding, this.viewportHeight + clipPadding],
+            [-clipPadding, this.viewportHeight + clipPadding],
+            [-clipPadding, -clipPadding],
         ]);
 
         const d = getSvgPathD(roundPoly(clippedSelection));

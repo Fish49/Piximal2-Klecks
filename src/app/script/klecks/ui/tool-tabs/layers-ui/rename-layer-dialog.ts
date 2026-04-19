@@ -81,7 +81,6 @@ export function renameLayerDialog(
     }, 10);
 
     showModal({
-        target: parentEl,
         message: `<b>${LANG('layers-rename-title')}</b>`,
         div: div,
         buttons: [LANG('layers-rename'), 'Cancel'],

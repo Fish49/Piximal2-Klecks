@@ -154,7 +154,6 @@ export class SettingsUi {
                     }
                     const disableStr = LANG('settings-save-reminder-confirm-disable');
                     showModal({
-                        target: document.body,
                         message: '⚠️' + LANG('settings-save-reminder-confirm-title'),
                         div: c('', [
                             c('.info-hint', LANG('settings-save-reminder-confirm-a')),

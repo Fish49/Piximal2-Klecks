@@ -91,7 +91,6 @@ export function mergeLayerDialog(
     });
 
     showModal({
-        target: parentEl,
         message: `<b>${LANG('layers-merge-modal-title')}</b>`,
         div: div,
         buttons: ['Ok', 'Cancel'],

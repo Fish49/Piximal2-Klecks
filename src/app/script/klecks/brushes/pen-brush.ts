@@ -4,13 +4,13 @@ import { TPressureInput, TRgb } from '../kl-types';
 import { BezierLine } from '../../bb/math/line';
 import { KlHistory } from '../history/kl-history';
 import { getPushableLayerChange } from '../history/push-helpers/get-pushable-layer-change';
-import { TBounds } from '../../bb/bb-types';
 import { canvasAndChangedTilesToLayerTiles } from '../history/push-helpers/canvas-to-layer-tiles';
 import { getChangedTiles, updateChangedTiles } from '../history/push-helpers/changed-tiles';
 import { MultiPolygon } from 'polygon-clipping';
 import { getSelectionPath2d } from '../../bb/multi-polygon/get-selection-path-2d';
-import { boundsOverlap, integerBounds } from '../../bb/math/math';
+import { intersectBounds } from '../../bb/math/math';
 import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bounds';
+import { TIndexBounds } from '../../bb/bb-types';
 import { genBrushAlpha04 } from './alphas/brush-alphas';
 
 const ALPHA_CIRCLE = 0;
@@ -57,10 +57,10 @@ export class PenBrush {
 
     private selection: MultiPolygon | undefined;
     private selectionPath: Path2D | undefined;
-    private selectionBounds: TBounds | undefined;
+    private selectionBounds: TIndexBounds | undefined;
 
-    private updateChangedTiles(bounds: TBounds) {
-        const boundsWithinSelection = boundsOverlap(bounds, this.selectionBounds);
+    private updateChangedTiles(bounds: TIndexBounds) {
+        const boundsWithinSelection = intersectBounds(bounds, this.selectionBounds);
         if (!boundsWithinSelection) {
             return;
         }
@@ -190,10 +190,11 @@ export class PenBrush {
                 ? size
                 : size * Math.sqrt(2);
         this.updateChangedTiles({
+            type: 'index',
             x1: Math.floor(x - boundsSize),
             y1: Math.floor(y - boundsSize),
-            x2: Math.ceil(x + boundsSize),
-            y2: Math.ceil(y + boundsSize),
+            x2: Math.ceil(x + boundsSize - 1),
+            y2: Math.ceil(y + boundsSize - 1),
         });
 
         if (this.settingAlphaId === ALPHA_CIRCLE) {
@@ -285,7 +286,7 @@ export class PenBrush {
         this.selection = this.klHistory.getComposed().selection.value;
         this.selectionPath = this.selection ? getSelectionPath2d(this.selection) : undefined;
         this.selectionBounds = this.selection
-            ? integerBounds(getMultiPolyBounds(this.selection))
+            ? getMultiPolyBounds(this.selection, 'index')
             : undefined;
 
         this.changedTiles = [];
@@ -399,7 +400,7 @@ export class PenBrush {
         this.selection = this.klHistory.getComposed().selection.value;
         this.selectionPath = this.selection ? getSelectionPath2d(this.selection) : undefined;
         this.selectionBounds = this.selection
-            ? integerBounds(getMultiPolyBounds(this.selection))
+            ? getMultiPolyBounds(this.selection, 'index')
             : undefined;
         this.changedTiles = [];
         this.lastInput.x = x2;

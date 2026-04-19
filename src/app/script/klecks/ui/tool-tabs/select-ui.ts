@@ -13,6 +13,7 @@ import lassoSvg from 'url:/src/app/img/ui/select-shape-lasso.svg';
 import polySvg from 'url:/src/app/img/ui/select-shape-poly.svg';
 import removeLayerImg from 'url:/src/app/img/ui/remove-layer.svg';
 import duplicateLayerImg from 'url:/src/app/img/ui/duplicate-layer.svg';
+import warpImg from 'url:/src/app/img/ui/select-transform-warp.svg';
 import { Select } from '../components/select';
 import { LANG } from '../../../language/language';
 import { Checkbox } from '../components/checkbox';
@@ -20,12 +21,25 @@ import { createImage } from '../../../bb/base/ui';
 import { css } from '../../../bb/base/base';
 import { TInterpolationAlgorithm } from '../../kl-types';
 import { Icon } from '../components/icon';
-import { TFreeTransform } from '../components/free-transform-utils';
+import { createCanvas } from '../../../bb/base/create-canvas';
+import { TFreeTransform } from '../../transform/transform-types';
+import { webGl2IsSupported } from '../../image-operations/gpu-composite-canvas';
+
+function getAlgorithmIconDataUrl(): string {
+    const canvas = createCanvas(3, 3);
+    const ctx = BB.ctx(canvas);
+    ctx.fillRect(0, 0, 1, 1);
+    ctx.fillRect(2, 0, 1, 1);
+    ctx.fillRect(1, 1, 1, 1);
+    ctx.fillRect(0, 2, 1, 1);
+    ctx.fillRect(2, 2, 1, 1);
+    return canvas.toDataURL('image/png');
+}
 
 export type TSelectUiParams = {
-    onChangeMode: (mode: TSelectToolMode) => void;
+    // return false to reject mode-change
+    onChangeMode: (mode: TSelectToolMode) => boolean;
     onChangeBooleanOperation: (operation: TBooleanOperation) => void;
-    canTransform: () => boolean; // return: can the current selected area be transformed
     select: {
         shape: TSelectShape; // initial value
         onChangeShape: (shape: TSelectShape) => void;
@@ -45,6 +59,7 @@ export type TSelectUiParams = {
         onChangeAlgorithm: (algorithm: TInterpolationAlgorithm) => void;
         onChangeConstrain: (isConstrained: boolean) => void;
         onChangeSnapping: (isSnapping: boolean) => void;
+        onChangeWarp: (isWarping: boolean) => void;
     };
     onErase: () => void;
     onFill: () => void;
@@ -65,7 +80,8 @@ export class SelectUi {
     private positionOutput: HTMLElement;
     private moveToLayerSelect: Select<string>;
     private transparentBackgroundToggle: Checkbox;
-    private algorithmSelect: Select<TInterpolationAlgorithm>;
+    private algorithmOptions: Options<TInterpolationAlgorithm>;
+    private warpCheckbox: Checkbox;
     private constrainCheckbox: Checkbox;
     private snappingCheckbox: Checkbox;
     private operationOptions: Options<TBooleanOperation>;
@@ -130,14 +146,11 @@ export class SelectUi {
                 if (val === 'select') {
                     this.operationOptions.setValue('new');
                 }
-                this.onChangeMode(val);
                 updateMode();
             },
             onBeforeChange: (val: TSelectToolMode) => {
-                if (val === 'transform') {
-                    return p.canTransform();
-                }
-                return true;
+                // change to "transform" can be rejected if selection is empty
+                return this.onChangeMode(val);
             },
             optionCss: {
                 flexGrow: '1',
@@ -353,7 +366,7 @@ export class SelectUi {
             },
         });
 
-        this.positionOutput = BB.el({});
+        this.positionOutput = BB.el({ css: { fontFamily: 'monospace', fontSize: '13px' } });
         transformModeEl.append(this.positionOutput);
 
         const transformFlipXBtn = BB.el({
@@ -496,6 +509,24 @@ export class SelectUi {
             },
             name: 'enable-snapping',
         });
+        this.warpCheckbox = new Checkbox({
+            init: false,
+            isEnabled: webGl2IsSupported(),
+            label:
+                `<img src="${warpImg}" class="dark-invert" height="23">` +
+                LANG('select-transform-warp'),
+            callback: (b) => {
+                p.transform.onChangeWarp(b);
+                // Disable constrain and snapping checkboxes when warping
+                this.constrainCheckbox.setEnabled(!b);
+                this.snappingCheckbox.setEnabled(!b);
+            },
+            css: {
+                width: 'fit-content',
+            },
+            name: 'transform-warp',
+        });
+        transformModeEl.append(this.warpCheckbox.getElement());
         const checkboxWrapper = BB.el();
         checkboxWrapper.append(
             this.constrainCheckbox.getElement(),
@@ -503,24 +534,43 @@ export class SelectUi {
         );
         transformModeEl.append(checkboxWrapper);
 
-        this.algorithmSelect = new Select({
-            optionArr: [
-                ['smooth', LANG('algorithm-smooth')],
-                ['pixelated', LANG('algorithm-pixelated')],
-            ],
-            initValue: 'smooth',
-            onChange: (algorithm): void => {
-                p.transform.onChangeAlgorithm(algorithm);
-            },
-            name: 'interpolation-algorithm',
+        const iconSmooth = new Image();
+        iconSmooth.src = getAlgorithmIconDataUrl();
+        iconSmooth.className = 'dark-invert';
+        css(iconSmooth, {
+            width: '20px',
+            height: '20px',
+            margin: '4px',
         });
 
-        transformModeEl.append(
-            c(',flex,items-center,gap-5,flexWrap', [
-                LANG('scaling-algorithm') + ':',
-                this.algorithmSelect.getElement(),
-            ]),
-        );
+        const iconPixelated = new Image();
+        iconPixelated.src = iconSmooth.src;
+        iconPixelated.className = 'dark-invert';
+        css(iconPixelated, {
+            width: '20px',
+            height: '20px',
+            margin: '4px',
+            imageRendering: 'pixelated',
+        });
+
+        this.algorithmOptions = new Options({
+            optionArr: [
+                {
+                    id: 'smooth',
+                    label: iconSmooth,
+                    title: LANG('algorithm-smooth'),
+                },
+                {
+                    id: 'pixelated',
+                    label: iconPixelated,
+                    title: LANG('algorithm-pixelated'),
+                },
+            ],
+            onChange: (algorithm) => {
+                p.transform.onChangeAlgorithm(algorithm);
+            },
+        });
+        transformModeEl.append(this.algorithmOptions.getElement());
 
         this.moveToLayerSelect = new Select({
             optionArr: [
@@ -611,18 +661,32 @@ export class SelectUi {
     }
 
     setAlgorithm(algorithm: TInterpolationAlgorithm): void {
-        this.algorithmSelect.setValue(algorithm);
+        this.algorithmOptions.setValue(algorithm);
     }
 
     setFreeTransformTransformation(transform: TFreeTransform): void {
         const x = BB.round(transform.x, 0);
         const y = BB.round(transform.y, 0);
         const rotation = BB.round(transform.angleDeg, 0);
-        this.positionOutput.innerText = `X: ${x}; Y: ${y}; ${LANG('filter-transform-rotation')}: ${rotation}°`;
+        this.positionOutput.innerText = `X:${x} Y:${y} ${LANG('filter-transform-rotation')}:${rotation}°`;
     }
 
     setShowTransparentBackgroundToggle(show: boolean): void {
         this.transparentBackgroundToggle.getElement().style.display = show ? 'block' : 'none';
+    }
+
+    setIsWarping(isWarping: boolean): void {
+        this.warpCheckbox.setValue(isWarping);
+        this.constrainCheckbox.setEnabled(!isWarping);
+        this.snappingCheckbox.setEnabled(!isWarping);
+    }
+
+    getIsWarping(): boolean {
+        return this.warpCheckbox.getValue();
+    }
+
+    getAlgorithm(): TInterpolationAlgorithm {
+        return this.algorithmOptions.getValue();
     }
 
     getElement(): HTMLElement {

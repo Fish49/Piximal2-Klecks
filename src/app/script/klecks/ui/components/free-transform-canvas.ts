@@ -4,8 +4,8 @@ import { TKlBasicLayer } from '../../kl-types';
 import { TRect } from '../../../bb/bb-types';
 import { Preview } from '../project-viewport/preview';
 import { TProjectViewportProject } from '../project-viewport/project-viewport';
-import { TFreeTransform } from './free-transform-utils';
 import { css } from '../../../bb/base/base';
+import { TFreeTransform } from '../../transform/transform-types';
 
 /**
  * a basic canvas where you can transform one layer(move around, rotate, scale)

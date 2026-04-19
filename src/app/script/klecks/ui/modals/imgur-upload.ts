@@ -165,7 +165,6 @@ export function imgurUpload(
         tos,
     );
     KL.popup({
-        target: klRootEl,
         message: `<b>${LANG('upload-title')}</b>`,
         type: 'upload',
         div: outDiv,
@@ -185,7 +184,6 @@ export function imgurUpload(
                     );
 
                     KL.popup({
-                        target: klRootEl,
                         type: 'ok',
                         message: `<h3>${LANG('upload-success')}</h3><br>${LANG('upload-delete')}<br><a target='_blank' rel="noopener noreferrer" href='https://imgur.com/delete/${result.deletehash}'>imgur.com/delete/${result.deletehash}</a><br><br>`,
                         buttons: ['Ok'],
@@ -193,7 +191,6 @@ export function imgurUpload(
                     onUploaded();
                 } catch (e) {
                     KL.popup({
-                        target: klRootEl,
                         type: 'error',
                         message: LANG('upload-failed'),
                         buttons: ['Ok'],

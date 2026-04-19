@@ -1,14 +1,14 @@
 import { BB } from '../../bb/bb';
 import { TRgb } from '../kl-types';
-import { TBounds } from '../../bb/bb-types';
 import { ERASE_COLOR } from './erase-color';
 import { KlHistory } from '../history/kl-history';
 import { getPushableLayerChange } from '../history/push-helpers/get-pushable-layer-change';
 import { canvasToLayerTiles } from '../history/push-helpers/canvas-to-layer-tiles';
 import { MultiPolygon } from 'polygon-clipping';
 import { getSelectionPath2d } from '../../bb/multi-polygon/get-selection-path-2d';
-import { boundsOverlap, integerBounds } from '../../bb/math/math';
+import { intersectBounds } from '../../bb/math/math';
 import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bounds';
+import { TIndexBounds } from '../../bb/bb-types';
 
 type TChemyMode = 'fill' | 'stroke';
 
@@ -33,16 +33,17 @@ export class ChemyBrush {
     private path: { x: number; y: number }[] = [];
     private minY: number = 0;
     private maxY: number = 0;
-    private completeRedrawBounds: TBounds | undefined;
+    private completeRedrawBounds: TIndexBounds | undefined;
 
     private selection: MultiPolygon | undefined;
     private selectionPath: Path2D | undefined;
-    private selectionBounds: TBounds | undefined;
+    private selectionBounds: TIndexBounds | undefined;
 
     private updateCompleteRedrawBounds(x: number, y: number): void {
-        let bounds = { x1: x, y1: y, x2: x, y2: y };
+        let bounds: TIndexBounds = { type: 'index', x1: x, y1: y, x2: x, y2: y };
         if (this.settingXSymmetry) {
             bounds = BB.updateBounds(bounds, {
+                type: 'index',
                 x1: -x + this.copyCanvas.width,
                 y1: y,
                 x2: -x + this.copyCanvas.width,
@@ -51,6 +52,7 @@ export class ChemyBrush {
         }
         if (this.settingYSymmetry) {
             bounds = BB.updateBounds(bounds, {
+                type: 'index',
                 x1: x,
                 y1: -y + this.copyCanvas.height,
                 x2: x,
@@ -283,7 +285,7 @@ export class ChemyBrush {
         this.selection = this.klHistory.getComposed().selection.value;
         this.selectionPath = this.selection ? getSelectionPath2d(this.selection) : undefined;
         this.selectionBounds = this.selection
-            ? integerBounds(getMultiPolyBounds(this.selection))
+            ? getMultiPolyBounds(this.selection, 'index')
             : undefined;
         this.isDrawing = true;
         this.path = [{ x, y }];
@@ -315,13 +317,13 @@ export class ChemyBrush {
 
     endLine(): void {
         this.isDrawing = false;
-        this.completeRedrawBounds = BB.boundsInArea(
+        this.completeRedrawBounds = BB.indexBoundsInArea(
             this.completeRedrawBounds,
             this.copyCanvas.width,
             this.copyCanvas.height,
         );
         if (this.selectionBounds) {
-            this.completeRedrawBounds = boundsOverlap(
+            this.completeRedrawBounds = intersectBounds(
                 this.completeRedrawBounds,
                 this.selectionBounds,
             );

@@ -63,7 +63,6 @@ export class RecoveryManagerPanel {
                             maxWidth: '100%',
                         });
                         showModal({
-                            target: document.body,
                             type: 'warning',
                             message: BB.el({
                                 content: [LANG('tab-recovery-delete-confirmation'), thumbnail2],

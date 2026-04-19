@@ -5,7 +5,7 @@ import { LANG } from '../../../language/language';
 import { StatusOverlay } from '../components/status-overlay';
 import { TCropRect, TRect } from '../../../bb/bb-types';
 import { MultiPolygon } from 'polygon-clipping';
-import { boundsToRect, intBoundsWithinArea } from '../../../bb/math/math';
+import { boundsToRect, indexBoundsInArea } from '../../../bb/math/math';
 import { getMultiPolyBounds } from '../../../bb/multi-polygon/get-multi-polygon-bounds';
 import { Checkbox } from '../components/checkbox';
 import { css } from '../../../bb/base/base';
@@ -60,8 +60,8 @@ export function clipboardDialog(
     const fullCanvas = getFullCanvas(maskSelection);
     let init: TRect | undefined;
     if (selection) {
-        const bounds = getMultiPolyBounds(selection);
-        const boundsInCanvas = intBoundsWithinArea(bounds, fullCanvas.width, fullCanvas.height);
+        const bounds = getMultiPolyBounds(selection, 'index');
+        const boundsInCanvas = indexBoundsInArea(bounds, fullCanvas.width, fullCanvas.height);
         init = boundsInCanvas ? boundsToRect(boundsInCanvas) : undefined;
     }
     const cropCopy = new CropCopy({
@@ -121,7 +121,6 @@ export function clipboardDialog(
     buttonArr.push('Cancel');
 
     showModal({
-        target: parent,
         message:
             '<b>' +
             (showCropButton

@@ -131,7 +131,7 @@ export class FxShader {
                         break;
                     default:
                         throw (
-                            'dont\'t know how to load uniform "' +
+                            'don\'t know how to load uniform "' +
                             name +
                             '" of length ' +
                             value.length

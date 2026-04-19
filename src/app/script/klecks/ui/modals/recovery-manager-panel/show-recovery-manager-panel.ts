@@ -9,7 +9,6 @@ import { LANG } from '../../../../language/language';
 export function showRecoveryManagerPanel(klRecoveryManager?: KlRecoveryManager) {
     if (!klRecoveryManager || !KL_INDEXED_DB.getIsAvailable()) {
         KL.popup({
-            target: document.body,
             type: 'error',
             message: LANG('file-storage-cant-access'),
             buttons: ['Ok'],
@@ -25,7 +24,6 @@ export function showRecoveryManagerPanel(klRecoveryManager?: KlRecoveryManager) 
         recoveryManager.destroy();
     };
     const modal = showModal({
-        target: document.body,
         message: `<b>${LANG('tab-recovery-recover-tabs')}</b>`,
         div: rootEl,
         buttons: [LANG('modal-close')],

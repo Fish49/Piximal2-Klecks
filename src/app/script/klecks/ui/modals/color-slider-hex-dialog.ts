@@ -142,7 +142,6 @@ export class HexColorDialog {
         ]);
 
         showModal({
-            target: document.body,
             message: `<b>${LANG('manual-color-input')}</b>`,
             div: rootEl,
             autoFocus: false,

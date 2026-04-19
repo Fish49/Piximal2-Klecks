@@ -277,7 +277,7 @@ export class PointerListener {
     private didSkip: boolean = false;
 
     // listeners
-    private readonly onPointerEnter: (() => void) | undefined;
+    private readonly onPointerEnter: ((e: PointerEvent) => void) | undefined;
     private readonly onPointerLeave: (() => void) | undefined;
     private readonly onPointerMove: ((event: PointerEvent) => void) | undefined;
     private readonly onPointerDown:
@@ -697,7 +697,11 @@ export class PointerListener {
             });
         }
         if (this.onEnterLeaveCallback) {
-            this.onPointerEnter = () => {
+            this.onPointerEnter = (e: PointerEvent) => {
+                // workaround for Safari which can falsely fire pointerenter. For more details see below.
+                if (!pointerTypeMouseOccurred && e.pointerType === 'mouse') {
+                    return;
+                }
                 this.isOverCounter++;
                 this.onEnterLeaveCallback?.(true);
             };
@@ -756,3 +760,17 @@ export class PointerListener {
             this.targetElement.removeEventListener('touchcancel', this.onTouchCancel);
     }
 }
+
+// Workaround for Safari (iOS/IPadOS 26.2) https://bugs.webkit.org/show_bug.cgi?id=305856
+// The incorrect pointerenter event will be of type "mouse" although the click happened with "touch".
+// This workaround won't work if the user uses both touch and mouse. The probability of that should be low enough.
+let pointerTypeMouseOccurred = false;
+setTimeout(() => {
+    const listener = (e: PointerEvent) => {
+        if (e.pointerType === 'mouse' && !pointerTypeMouseOccurred) {
+            pointerTypeMouseOccurred = true;
+            document.removeEventListener(pointerMoveEvt, listener);
+        }
+    };
+    document.addEventListener(pointerMoveEvt, listener);
+});

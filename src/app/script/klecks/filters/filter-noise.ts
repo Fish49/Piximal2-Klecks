@@ -27,7 +27,6 @@ import { canvasToLayerTiles } from '../history/push-helpers/canvas-to-layer-tile
 import { noise } from '../../fx-canvas/filters/noise';
 import { drawSelectionMask } from '../../bb/base/canvas';
 import { getPushableLayerChange } from '../history/push-helpers/get-pushable-layer-change';
-import { integerBounds } from '../../bb/math/math';
 import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bounds';
 
 // see noise(...) in fx-canvas
@@ -591,7 +590,7 @@ export const filterNoise = {
                 klHistory.getComposed(),
                 canvasToLayerTiles(
                     context.canvas,
-                    selection ? integerBounds(getMultiPolyBounds(selection)) : undefined,
+                    selection ? getMultiPolyBounds(selection, 'index') : undefined,
                 ),
             ),
         );

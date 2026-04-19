@@ -183,7 +183,6 @@ export function showImportImageDialog(p: {
         }
     }
     showModal({
-        target: p.target,
         message: `<b>${LANG('import-title')}</b>`,
         div: rootEl,
         style,

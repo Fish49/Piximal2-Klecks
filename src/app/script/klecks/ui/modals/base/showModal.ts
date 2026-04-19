@@ -8,7 +8,6 @@ import checkImg from 'url:/src/app/img/ui/check.svg';
 import removeLayerImg from 'url:/src/app/img/ui/remove-layer.svg';
 
 export function showModal(p: {
-    target: HTMLElement;
     div?: HTMLElement; // node with content
     message: string | Element; // can be html
     callback?: (result: string) => void;

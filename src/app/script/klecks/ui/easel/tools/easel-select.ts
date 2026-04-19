@@ -1,12 +1,14 @@
 import { BB } from '../../../../bb/bb';
 import { TPointerEvent, TPointerType } from '../../../../bb/input/event.types';
-import { TBounds, TVector2D } from '../../../../bb/bb-types';
+import { TVector2D } from '../../../../bb/bb-types';
 import { TSelectToolMode } from '../../tool-tabs/select-ui';
 import { createMatrixFromTransform } from '../../../../bb/transform/create-matrix-from-transform';
-import { applyToPoint, compose, inverse, Matrix, rotate, translate } from 'transformation-matrix';
+import { applyToPoint, inverse } from 'transformation-matrix';
+import { TFreeTransform } from '../../../transform/transform-types';
+import { checkRectFullyVisible } from '../../project-viewport/utils/check-rect-fully-visible';
+import { getFitRectTransform } from '../../project-viewport/utils/get-fit-rect-transform';
 import { TArrowKey, TEaselInterface, TEaselTool, TEaselToolTrigger } from '../easel.types';
 import { TViewportTransform, TViewportTransformXY } from '../../project-viewport/project-viewport';
-import { boundsToRect, pointsToAngleDeg } from '../../../../bb/math/math';
 import { MultiPolygon } from 'polygon-clipping';
 import { TBooleanOperation, TSelectShape } from '../../../select-tool/select-tool';
 import { getSelectionPath2d } from '../../../../bb/multi-polygon/get-selection-path-2d';
@@ -15,55 +17,21 @@ import { DoubleTapper } from '../../../../bb/input/event-chain/double-tapper';
 import { TChainElement } from '../../../../bb/input/event-chain/event-chain.types';
 import { CornerPanning } from '../corner-panning';
 import { FreeTransform } from '../../components/free-transform';
-import { freeTransformToMatrix } from '../../../select-tool/select-transform-tool';
-import { TFreeTransform } from '../../components/free-transform-utils';
+import {
+    createFfdMesh,
+    evalFFD,
+    findParametricCoordinate,
+    TFfdLattice,
+    TFfdMesh,
+    TParametric2D,
+    warpLatticeViaPoint,
+} from '../../../transform/ffd';
+import {
+    RENDERED_FFD_MESH_RESOLUTION,
+    TComposedTransformation,
+} from '../../../transform/composed-transformation';
 
-function transformFreeTransformViaMatrix(
-    freeTransform: TFreeTransform,
-    matrix: Matrix,
-): TFreeTransform {
-    const width = freeTransform.width;
-    const height = freeTransform.height;
-    const toCanvasMatrix = compose(
-        translate(freeTransform.x, freeTransform.y),
-        rotate((freeTransform.angleDeg / 180) * Math.PI),
-    );
-
-    const centerAfter = applyToPoint(matrix, freeTransform);
-
-    // determine angle
-    const upBefore = applyToPoint(toCanvasMatrix, { x: 0, y: 1 });
-    const upAfter = applyToPoint(matrix, upBefore);
-    const angleDeg = pointsToAngleDeg(centerAfter, upAfter) - 90;
-
-    const tlBefore = applyToPoint(toCanvasMatrix, { x: -width / 2, y: -height / 2 });
-    const trBefore = applyToPoint(toCanvasMatrix, { x: width / 2, y: -height / 2 });
-    const blBefore = applyToPoint(toCanvasMatrix, { x: -width / 2, y: height / 2 });
-    // transform each and undo rotation
-    const matrixWithoutRotation = compose(
-        rotate((-angleDeg / 180) * Math.PI, centerAfter.x, centerAfter.y),
-        matrix,
-    );
-    const tlAfter = applyToPoint(matrixWithoutRotation, tlBefore);
-    const trAfter = applyToPoint(matrixWithoutRotation, trBefore);
-    const blAfter = applyToPoint(matrixWithoutRotation, blBefore);
-
-    const newWidth = trAfter.x - tlAfter.x;
-    const newHeight = blAfter.y - tlAfter.y;
-
-    return {
-        x: centerAfter.x,
-        y: centerAfter.y,
-        width: Math.round(newWidth),
-        height: Math.round(newHeight),
-        angleDeg: angleDeg,
-    } as TFreeTransform;
-}
-
-const modeToCursor: Record<TSelectToolMode, string> = {
-    select: 'default',
-    transform: 'move',
-};
+const FFD_DEBUG = false;
 
 const operationToCursor: Record<TBooleanOperation, string> = {
     new: 'default',
@@ -77,17 +45,19 @@ export type TEaselSelectParams = {
     // select
 
     onStartSelect: (p: TVector2D, operation: TBooleanOperation) => void;
-    onGoSelect: (p: TVector2D) => void;
+    onGoSelect: (p: TVector2D, isShiftPressed: boolean) => void;
     onEndSelect: () => void;
     onStartMoveSelect: (p: TVector2D) => void;
-    onGoMoveSelect: (p: TVector2D) => void;
+    onGoMoveSelect: (p: TVector2D, isShiftPressed: boolean) => void;
     onEndMoveSelect: () => void;
     onSelectAddPoly: (path: TVector2D[], operation: TBooleanOperation) => void;
     onResetSelection: () => void;
 
     // transform
 
-    onFreeTransform: (matrix: Matrix) => void;
+    onTransform: (transform: TComposedTransformation) => void;
+    // gesture completed (create an undo step)
+    onTransformEnd: () => void;
 };
 
 /**
@@ -97,14 +67,15 @@ export class EaselSelect implements TEaselTool {
     // from params
 
     private readonly onStartSelect: (p: TVector2D, operation: TBooleanOperation) => void;
-    private readonly onGoSelect: (p: TVector2D) => void;
+    private readonly onGoSelect: (p: TVector2D, isShiftPressed: boolean) => void;
     private readonly onEndSelect: () => void;
     private readonly onStartMoveSelect: (p: TVector2D) => void;
-    private readonly onGoMoveSelect: (p: TVector2D) => void;
+    private readonly onGoMoveSelect: (p: TVector2D, isShiftPressed: boolean) => void;
     private readonly onEndMoveSelect: () => void;
     private readonly onSelectAddPoly: (path: TVector2D[], operation: TBooleanOperation) => void;
     private readonly onResetSelection: () => void;
-    private readonly onFreeTransform: TEaselSelectParams['onFreeTransform'];
+    private readonly onTransform: TEaselSelectParams['onTransform'];
+    private readonly onTransformEnd: TEaselSelectParams['onTransformEnd'];
 
     private readonly svgEl: SVGElement;
     private readonly htmlEl: HTMLElement;
@@ -119,7 +90,6 @@ export class EaselSelect implements TEaselTool {
     private canvasSelection: MultiPolygon = [];
     private selection: MultiPolygon | undefined;
     private selectionPath: Path2D = getSelectionPath2d([]);
-    private selectionBounds: TBounds | undefined;
     private mode: TSelectToolMode = 'select';
     private isDragging: boolean = false;
 
@@ -135,12 +105,18 @@ export class EaselSelect implements TEaselTool {
     // transform-mode state
 
     private freeTransform: FreeTransform | undefined;
-    // selection sample changes its transform with each clone. So we need to store the starting point transformation,
-    // or it could have been a getter
-    private initialTransformMatrix: Matrix = {} as Matrix;
-    private initialFreeTransform: TFreeTransform = {} as TFreeTransform;
+    private freeTransformTimeout: ReturnType<typeof setTimeout> | undefined;
+    private transformation: TComposedTransformation | undefined;
     private freeTransformIsConstrained: boolean = true;
     private freeTransformIsSnapping: boolean = true;
+    private ffdMesh: TFfdMesh | undefined;
+    private warpStart:
+        | {
+              parametricCoordinate: TParametric2D;
+              lattice: TFfdLattice;
+          }
+        | undefined;
+    private latticePath: Path2D | undefined;
 
     private viewportToCanvas(p: TVector2D): TVector2D {
         const matrix = inverse(createMatrixFromTransform(this.easel.getTransform()));
@@ -219,7 +195,7 @@ export class EaselSelect implements TEaselTool {
             }
             if (event.type === 'pointermove' && event.button === 'left') {
                 this.didSelectionMove = true;
-                this.onGoMoveSelect(cursorCanvasPos);
+                    this.onGoMoveSelect(cursorCanvasPos, this.easel.keyListener.isPressed('shift'));
             }
             if (event.type === 'pointerup') {
                 this.onEndMoveSelect();
@@ -282,7 +258,7 @@ export class EaselSelect implements TEaselTool {
                     this.onStartSelect(cursorCanvasPos, this.appliedBooleanOperation!);
                 }
                 if (event.type === 'pointermove' && event.button === 'left' && this.isDragging) {
-                    this.onGoSelect(cursorCanvasPos);
+                    this.onGoSelect(cursorCanvasPos, this.easel.keyListener.isPressed('shift'));
                 }
                 if (event.type === 'pointerup' && wasDragging) {
                     this.onEndSelect();
@@ -310,8 +286,58 @@ export class EaselSelect implements TEaselTool {
 
     // can be repeatedly called with the same event
     private transformOnPointer(event: TPointerEvent): void {
-        this.easel.setCursor('default');
-        // handled via this.freeTransform atm
+        if (!this.transformation || this.transformation.type !== 'ffd' || !this.ffdMesh) {
+            this.easel.setCursor('default');
+            // handled via this.freeTransform
+            return;
+        }
+
+        // warping
+        const cursorCanvasPos = this.viewportToCanvas({ x: event.relX, y: event.relY });
+        const parametricCoordinate = findParametricCoordinate(
+            cursorCanvasPos.x,
+            cursorCanvasPos.y,
+            this.ffdMesh,
+        );
+        if (event.type === 'pointerdown' && event.button === 'left') {
+            if (parametricCoordinate) {
+                this.warpStart = {
+                    parametricCoordinate,
+                    lattice: this.transformation.ffd,
+                };
+                this.easel.setCursor('move');
+            }
+        }
+        if (event.type === 'pointermove' && this.warpStart) {
+            // Apply warp
+            this.transformation.ffd = warpLatticeViaPoint(
+                this.warpStart.parametricCoordinate,
+                cursorCanvasPos,
+                this.warpStart.lattice,
+            );
+            const { width, height } = this.easel.getProjectSize();
+            this.ffdMesh = createFfdMesh(
+                RENDERED_FFD_MESH_RESOLUTION,
+                RENDERED_FFD_MESH_RESOLUTION,
+                this.transformation.ffd,
+                width,
+                height,
+                true,
+            );
+            this.updateLatticePath();
+            this.easel.requestRender();
+            this.onTransform(this.transformation);
+        }
+        if (event.type === 'pointerup') {
+            if (this.warpStart) {
+                this.onTransformEnd();
+            }
+            this.warpStart = undefined;
+        }
+        if (!this.warpStart) {
+            // Update cursor if not already dragging
+            this.easel.setCursor(parametricCoordinate ? 'move' : 'default');
+        }
     }
 
     private onPointerChainOut(event: TPointerEvent): void {
@@ -340,12 +366,34 @@ export class EaselSelect implements TEaselTool {
                     isFirstCallback = false;
                     return;
                 }
-                if (!this.selection || this.mode === 'select' || !this.selectionBounds) {
+                if (
+                    this.mode === 'select' ||
+                    !this.transformation ||
+                    !(
+                        this.transformation.type === 'free' ||
+                        this.transformation.type === 'ffd+free'
+                    )
+                ) {
                     return;
                 }
-                const freeTransformMatrix = freeTransformToMatrix(transform, this.selectionBounds);
-                const matrix = compose(freeTransformMatrix, inverse(this.initialTransformMatrix));
-                this.onFreeTransform(matrix);
+                if (
+                    isNaN(transform.x) ||
+                    isNaN(transform.y) ||
+                    isNaN(transform.width) ||
+                    isNaN(transform.height)
+                ) {
+                    //can be provoked by repeatedly x0.5, then dragging a corner
+                    return;
+                }
+                this.onTransform({
+                    ...this.transformation,
+                    freeTransform: transform,
+                });
+                // avoid spamming undo steps
+                if (this.freeTransformTimeout) {
+                    clearTimeout(this.freeTransformTimeout);
+                }
+                this.freeTransformTimeout = setTimeout(() => this.onTransformEnd(), 250);
             },
             onWheel: this.easel.onWheel,
             wheelParent: this.easel.getElement(),
@@ -359,6 +407,81 @@ export class EaselSelect implements TEaselTool {
         this.freeTransform?.getElement().remove();
         this.freeTransform?.destroy();
         this.freeTransform = undefined;
+    }
+
+    private updateFreeTransformVisibility(): void {
+        this.freeTransform
+            ?.getElement()
+            .style.setProperty('display', this.transformation?.type === 'ffd' ? 'none' : '');
+    }
+
+    private updateLatticePath(): void {
+        if (!this.transformation || this.transformation.type !== 'ffd') {
+            this.latticePath = undefined;
+            return;
+        }
+
+        const lattice = this.transformation.ffd;
+        const sampleCount = RENDERED_FFD_MESH_RESOLUTION;
+        const path = new Path2D();
+
+        function addPolyline(path: Path2D, points: TVector2D[]): void {
+            path.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) {
+                path.lineTo(points[i].x, points[i].y);
+            }
+        }
+
+        // horizontal lines
+        for (let i = 0; i < lattice.rows; i++) {
+            const t = i / (lattice.rows - 1);
+            const pts: TVector2D[] = [];
+            for (let e = 0; e <= sampleCount; e++) {
+                pts.push(evalFFD(e / sampleCount, t, lattice));
+            }
+            addPolyline(path, pts);
+        }
+
+        // vertical lines
+        for (let i = 0; i < lattice.cols; i++) {
+            const s = i / (lattice.cols - 1);
+            const pts: TVector2D[] = [];
+            for (let e = 0; e <= sampleCount; e++) {
+                pts.push(evalFFD(s, e / sampleCount, lattice));
+            }
+            addPolyline(path, pts);
+        }
+
+        this.latticePath = path;
+    }
+
+    private renderLattice(ctx: CanvasRenderingContext2D, scale: number): void {
+        if (!this.latticePath) {
+            return;
+        }
+
+        ctx.save();
+        ctx.lineWidth = 1 / scale;
+        // globalCompositeOperation = 'difference' is slow in firefox,
+        // and it doesn't look all that nice in any browser.
+        ctx.strokeStyle = 'rgb(128, 128, 128)';
+        ctx.stroke(this.latticePath);
+        if (FFD_DEBUG && this.transformation?.type === 'ffd') {
+            const lattice = this.transformation.ffd;
+            for (let i = 0; i < lattice.rows; i++) {
+                for (let j = 0; j < lattice.cols; j++) {
+                    const cp = lattice.controlPoints[i][j];
+                    ctx.beginPath();
+                    ctx.arc(cp.x, cp.y, 4 / scale, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 100, 100, 0.8)';
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                    ctx.lineWidth = 1.5 / scale;
+                    ctx.stroke();
+                }
+            }
+        }
+        ctx.restore();
     }
 
     // ----------------------------------- public -----------------------------------
@@ -376,7 +499,8 @@ export class EaselSelect implements TEaselTool {
         this.onEndMoveSelect = p.onEndMoveSelect;
         this.onSelectAddPoly = p.onSelectAddPoly;
         this.onResetSelection = p.onResetSelection;
-        this.onFreeTransform = p.onFreeTransform;
+        this.onTransform = p.onTransform;
+        this.onTransformEnd = p.onTransformEnd;
 
         this.cornerPanning = new CornerPanning({
             getEaselSize: () => this.easel.getSize(),
@@ -446,6 +570,7 @@ export class EaselSelect implements TEaselTool {
         if (this.mode === 'transform') {
             this.createFreeTransform();
         } else {
+            this.ffdMesh = undefined;
             this.destroyFreeTransform();
         }
     }
@@ -459,7 +584,17 @@ export class EaselSelect implements TEaselTool {
     }
 
     activate(cursorPos?: TVector2D, poppedTemp?: boolean): void {
-        this.easel.setCursor(modeToCursor[this.mode]);
+        if (cursorPos && this.transformation && this.ffdMesh) {
+            const cursorCanvasPos = this.viewportToCanvas(cursorPos);
+            const param = findParametricCoordinate(
+                cursorCanvasPos.x,
+                cursorCanvasPos.y,
+                this.ffdMesh,
+            );
+            this.easel.setCursor(param ? 'move' : 'default');
+        } else {
+            this.easel.setCursor('default');
+        }
         this.isDragging = false;
         this.onUpdateTransform(this.easel.getTransform());
         if (!poppedTemp) {
@@ -483,38 +618,56 @@ export class EaselSelect implements TEaselTool {
         this.easel.setRenderedSelection(selection);
     }
 
-    updateInitialTransformMatrix(): void {
-        if (!this.freeTransform) {
+    private bringTransformRectIntoView(freeTransform: TFreeTransform): void {
+        const viewportTransform = this.easel.getTransform();
+        const easelSize = this.easel.getSize();
+        const padding = 40;
+        const rect = {
+            x: freeTransform.x - freeTransform.width / 2,
+            y: freeTransform.y - freeTransform.height / 2,
+            width: freeTransform.width,
+            height: freeTransform.height,
+        };
+        if (checkRectFullyVisible(rect, viewportTransform, easelSize, 0)) {
             return;
         }
-        const transform = this.freeTransform.getValue();
-        this.initialFreeTransform = transform;
-        this.initialTransformMatrix = freeTransformToMatrix(transform, this.selectionBounds!);
+        this.easel.setTransform(
+            getFitRectTransform(rect, viewportTransform, easelSize, false, padding),
+        );
     }
 
-    initialiseTransform(bounds: TBounds): void {
-        this.selectionBounds = {
-            x1: 0,
-            y1: 0,
-            x2: bounds.x2 - bounds.x1,
-            y2: bounds.y2 - bounds.y1,
-        };
-        const rect = boundsToRect(bounds, false);
-        this.freeTransform?.initialise({
-            x: rect.x + rect.width / 2,
-            y: rect.y + rect.height / 2,
-            width: rect.width,
-            height: rect.height,
-            angleDeg: 0,
-        });
+    initialiseTransform(transform: TComposedTransformation): void {
+        transform = BB.copyObj(transform);
+        if (transform.type !== 'free') {
+            throw new Error('must call initialiseTransform with transform.type = "free"');
+        }
+        this.transformation = transform;
+        this.freeTransform?.initialise(transform.freeTransform);
         const { width, height } = this.easel.getProjectSize();
         this.freeTransform?.setSnappingPoints([0, width], [0, height]);
-        this.updateInitialTransformMatrix();
+        this.bringTransformRectIntoView(transform.freeTransform);
     }
 
-    setTransform(matrix: Matrix): void {
-        const newFreeTransform = transformFreeTransformViaMatrix(this.initialFreeTransform, matrix);
-        this.freeTransform?.initialise(newFreeTransform);
+    setTransform(transform: TComposedTransformation): void {
+        transform = BB.copyObj(transform);
+        this.transformation = transform;
+        if (transform.type === 'ffd') {
+            const { width, height } = this.easel.getProjectSize();
+            this.ffdMesh = createFfdMesh(
+                RENDERED_FFD_MESH_RESOLUTION,
+                RENDERED_FFD_MESH_RESOLUTION,
+                transform.ffd,
+                width,
+                height,
+                true,
+            );
+            this.easel.requestRender();
+        } else {
+            this.freeTransform?.initialise(transform.freeTransform);
+            this.ffdMesh = undefined;
+        }
+        this.updateLatticePath();
+        this.updateFreeTransformVisibility();
     }
 
     clearRenderedSelection(isImmediate?: boolean): void {
@@ -535,6 +688,12 @@ export class EaselSelect implements TEaselTool {
     }
 
     renderAfterViewport(ctx: CanvasRenderingContext2D, transform: TViewportTransformXY): void {
+        if (this.mode === 'transform' && this.transformation?.type === 'ffd') {
+            ctx.save();
+            this.renderLattice(ctx, transform.scaleX);
+            ctx.restore();
+        }
+
         if (this.polyShape.length < 2) {
             return;
         }
@@ -575,36 +734,15 @@ export class EaselSelect implements TEaselTool {
         if (!this.freeTransform) {
             return false;
         }
-        let movement = { x: 0, y: 0 };
-        if (direction === 'left') {
-            movement = {
-                x: -1,
-                y: 0,
-            };
-        }
-        if (direction === 'right') {
-            movement = {
-                x: 1,
-                y: 0,
-            };
-        }
-        if (direction === 'up') {
-            movement = {
-                x: 0,
-                y: -1,
-            };
-        }
-        if (direction === 'down') {
-            movement = {
-                x: 0,
-                y: 1,
-            };
-        }
-        if (this.easel.isKeyPressed('shift')) {
-            movement.x *= 5;
-            movement.y *= 5;
-        }
-        this.freeTransform.move(movement.x, movement.y);
+        const movementMap: Record<TArrowKey, TVector2D> = {
+            left: { x: -1, y: 0 },
+            right: { x: 1, y: 0 },
+            up: { x: 0, y: -1 },
+            down: { x: 0, y: 1 },
+        };
+        const multiplier = this.easel.isKeyPressed('shift') ? 5 : 1;
+        const movement = movementMap[direction];
+        this.freeTransform.move(movement.x * multiplier, movement.y * multiplier);
         return true;
     }
 
@@ -616,23 +754,5 @@ export class EaselSelect implements TEaselTool {
     setIsSnapping(isSnapping: boolean): void {
         this.freeTransformIsSnapping = isSnapping;
         this.freeTransform?.setSnapping(isSnapping);
-    }
-
-    getFreeTransformTransformation(): TFreeTransform | undefined {
-        return this.freeTransform?.getValue();
-    }
-
-    rotateFreeTransform(angleDeg: number): void {
-        if (!this.freeTransform || !this.selectionBounds) {
-            return;
-        }
-        const newAngle = (this.freeTransform.getValue().angleDeg + angleDeg) % 360;
-        this.freeTransform.setAngleDeg(newAngle);
-        const freeTransformMatrix = freeTransformToMatrix(
-            this.freeTransform.getValue(),
-            this.selectionBounds,
-        );
-        const matrix = compose(freeTransformMatrix, inverse(this.initialTransformMatrix));
-        this.onFreeTransform(matrix);
     }
 }

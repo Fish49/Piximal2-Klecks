@@ -282,6 +282,15 @@ const globalKey = ((): TGlobalKey => {
                 document.removeEventListener('keydown', keyDown);
                 document.removeEventListener('keyup', keyUp);
                 window.removeEventListener('blur', blur);
+
+                // cleanup
+                comboArr = [];
+                codeIsDownObj = {};
+                keyStrArr.forEach((keyStr) => {
+                    if (isDownObj[keyStr]) {
+                        isDownObj[keyStr] = false;
+                    }
+                });
             }
         },
         getIsDown: (): TIsDown => isDownObj,
@@ -341,7 +350,6 @@ export class KeyListener {
 
     destroy(): void {
         globalKey.remove(this.ref);
-        globalKey.blur();
     }
 }
 

@@ -1,7 +1,6 @@
 import { BB } from '../../bb/bb';
 import { Checkbox } from '../ui/components/checkbox';
 import { FreeTransform } from '../ui/components/free-transform';
-import { TFreeTransform } from '../ui/components/free-transform-utils';
 import { Select } from '../ui/components/select';
 import {
     isLayerFill,
@@ -24,6 +23,15 @@ import { MultiPolygon } from 'polygon-clipping';
 import { TRect } from '../../bb/bb-types';
 import { transformMultiPolygon } from '../../bb/multi-polygon/transform-multi-polygon';
 import { THistoryEntryLayerComposed } from '../history/history.types';
+import { getCanvasBounds } from '../../bb/base/canvas';
+import { TFreeTransform } from '../transform/transform-types';
+import {
+    centerTransformation,
+    flipTransformation,
+    rotateTransformation,
+    scaleTransformation,
+    TComposedFree,
+} from '../transform/composed-transformation';
 
 // preference expressed by user
 let preferenceIsTransparentBg: undefined | boolean;
@@ -211,7 +219,7 @@ export const filterTransform = {
         // determine bounds and initial transformation
         const boundsObj = selection
             ? getSelectionBounds(selection, context)
-            : BB.canvasBounds(context);
+            : getCanvasBounds(context);
         if (!boundsObj) {
             return {
                 error: LANG(
@@ -352,8 +360,15 @@ export const filterTransform = {
             tagName: 'button',
             content: LANG('filter-transform-flip') + ' X',
             onClick: () => {
-                const t = freeTransform.getValue();
-                freeTransform.setSize(-t.width, t.height);
+                const transformed = flipTransformation(
+                    {
+                        type: 'free',
+                        freeTransform: freeTransform.getValue(),
+                    },
+                    'x',
+                ) as TComposedFree;
+                freeTransform.initialise(transformed.freeTransform);
+                updatePreview();
             },
         });
         const flipYBtn = BB.el({
@@ -361,8 +376,15 @@ export const filterTransform = {
             tagName: 'button',
             content: LANG('filter-transform-flip') + ' Y',
             onClick: () => {
-                const t = freeTransform.getValue();
-                freeTransform.setSize(t.width, -t.height);
+                const transformed = flipTransformation(
+                    {
+                        type: 'free',
+                        freeTransform: freeTransform.getValue(),
+                    },
+                    'y',
+                ) as TComposedFree;
+                freeTransform.initialise(transformed.freeTransform);
+                updatePreview();
             },
         });
         const scaleRotLeftBtn = BB.el({
@@ -370,11 +392,15 @@ export const filterTransform = {
             tagName: 'button',
             content: '-90°',
             onClick: () => {
-                const t = freeTransform.getValue();
-                t.angleDeg -= 90;
-                t.angleDeg %= 360;
-                freeTransform.setAngleDeg(t.angleDeg);
-                inputR.value = '' + Math.round(t.angleDeg);
+                const transformed = rotateTransformation(
+                    {
+                        type: 'free',
+                        freeTransform: freeTransform.getValue(),
+                    },
+                    -90,
+                ) as TComposedFree;
+                freeTransform.initialise(transformed.freeTransform);
+                inputR.value = '' + Math.round(transformed.freeTransform.angleDeg);
                 updatePreview();
             },
         });
@@ -383,11 +409,15 @@ export const filterTransform = {
             tagName: 'button',
             content: '+90°',
             onClick: () => {
-                const t = freeTransform.getValue();
-                t.angleDeg += 90;
-                t.angleDeg %= 360;
-                freeTransform.setAngleDeg(t.angleDeg);
-                inputR.value = '' + Math.round(t.angleDeg);
+                const transformed = rotateTransformation(
+                    {
+                        type: 'free',
+                        freeTransform: freeTransform.getValue(),
+                    },
+                    90,
+                ) as TComposedFree;
+                freeTransform.initialise(transformed.freeTransform);
+                inputR.value = '' + Math.round(transformed.freeTransform.angleDeg);
                 updatePreview();
             },
         });
@@ -396,15 +426,15 @@ export const filterTransform = {
             tagName: 'button',
             content: '2&times;',
             onClick: () => {
-                const t = freeTransform.getValue();
-                if (constrainCheckbox.getValue()) {
-                    freeTransform.setSize(
-                        (t.width < 0 ? -1 : 1) * freeTransform.getRatio() * Math.abs(t.height) * 2,
-                        t.height * 2,
-                    );
-                } else {
-                    freeTransform.setSize(t.width * 2, t.height * 2);
-                }
+                const transformed = scaleTransformation(
+                    {
+                        type: 'free',
+                        freeTransform: freeTransform.getValue(),
+                    },
+                    2,
+                ) as TComposedFree;
+                freeTransform.initialise(transformed.freeTransform);
+                updatePreview();
             },
         });
         const scaleHalfBtn = BB.el({
@@ -412,8 +442,15 @@ export const filterTransform = {
             tagName: 'button',
             content: '&frac12;&times;',
             onClick: () => {
-                const t = freeTransform.getValue();
-                freeTransform.setSize(Math.round(t.width / 2), Math.round(t.height / 2));
+                const transformed = scaleTransformation(
+                    {
+                        type: 'free',
+                        freeTransform: freeTransform.getValue(),
+                    },
+                    0.5,
+                ) as TComposedFree;
+                freeTransform.initialise(transformed.freeTransform);
+                updatePreview();
             },
         });
         const centerBtn = BB.el({
@@ -421,12 +458,16 @@ export const filterTransform = {
             tagName: 'button',
             content: LANG('center'),
             onClick: () => {
-                const t = freeTransform.getValue();
-                freeTransform.setPos({
-                    x: context.canvas.width / 2,
-                    y: context.canvas.height / 2,
-                });
-                freeTransform.setAngleDeg(t.angleDeg);
+                const transformed = centerTransformation(
+                    {
+                        type: 'free',
+                        freeTransform: freeTransform.getValue(),
+                    },
+                    { x: context.canvas.width / 2, y: context.canvas.height / 2 },
+                ) as TComposedFree;
+                freeTransform.initialise(transformed.freeTransform);
+                inputX.value = '' + Math.round(transformed.freeTransform.x - initTransform.x);
+                inputY.value = '' + Math.round(transformed.freeTransform.y - initTransform.y);
                 updatePreview();
             },
         });
@@ -677,7 +718,6 @@ export const filterTransform = {
         if (!context) {
             return false;
         }
-        klHistory.pause(true);
         const input = params.input;
         const selectedLayerIndex = params.klCanvas.getLayerIndex(context.canvas)!;
 
@@ -695,9 +735,13 @@ export const filterTransform = {
         );
         if (selection && matrix) {
             selection = transformMultiPolygon(selection, matrix);
-            params.klCanvas.setSelection(selection);
+            klHistory.pause(true);
+            try {
+                params.klCanvas.setSelection(selection);
+            } finally {
+                klHistory.pause(false);
+            }
         }
-        klHistory.pause(false);
 
         {
             const layerMap = Object.fromEntries(

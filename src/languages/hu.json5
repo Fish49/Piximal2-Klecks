@@ -1034,8 +1034,8 @@
   },
   'filter-applied': {
     hint: 'used like this: „Invert“ applied. Informs that a filter was applied',
-    original: 'applied',
-    value: 'alkalmazott'
+    original: '"{x}" applied',
+    value: '"{x}" alkalmazott'
   },
   'filter-tilt-shift-title': {
     hint: 'same as the button, but can be longer',
@@ -1497,6 +1497,10 @@
   },
   'select-erase': {
     original: 'Erase',
+    value: ''
+  },
+  'select-transform-warp': {
+    original: 'Warp',
     value: ''
   },
   'select-transform-clone': {

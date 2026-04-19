@@ -7,6 +7,7 @@ import { TRgb } from '../../kl-types';
 import { HSV, RGB } from '../../../bb/color/color';
 import { ERASE_COLOR } from '../../brushes/erase-color';
 import { css } from '../../../bb/base/base';
+import { addHueStops } from '../../utils/hue-gradient';
 
 /**
  * big main HS+V color slider
@@ -182,22 +183,7 @@ export class KlColorSlider {
             const cv = BB.canvas(this.width, this.height);
             const ctx = BB.ctx(cv);
             const gradH = ctx.createLinearGradient(0, 0, this.width, 0);
-            for (let i = 0; i < 1; i += 0.01) {
-                const col = BB.ColorConverter.toRGB(new BB.HSV(i * 360, 100, 100));
-                let ha = parseInt('' + col.r).toString(16);
-                let hb = parseInt('' + col.g).toString(16);
-                let hc = parseInt('' + col.b).toString(16);
-                if (ha.length === 1) {
-                    ha = '0' + ha;
-                }
-                if (hb.length === 1) {
-                    hb = '0' + hb;
-                }
-                if (hc.length === 1) {
-                    hc = '0' + hc;
-                }
-                gradH.addColorStop(i, '#' + ha + hb + hc);
-            }
+            addHueStops(gradH);
             ctx.fillStyle = gradH;
             ctx.fillRect(0, 0, this.width, this.height);
 

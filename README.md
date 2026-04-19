@@ -1,9 +1,33 @@
+<div align="center">
+ <img src="https://bitbof.com/stuff/2022-01-klecks/2026-04-06-logo.png" alt="Klecks" title="Klecks">
+</div>
 
-Kleki: 🖌️ [Demo](https://kleki.com/) | ❓ [About](https://kleki.com/about/) | 📝 [Dev Blog](https://blog.kleki.com/)
-Piximal2-Klecks: 🖌️ [Demo](https://paishofish49.net/piximal2-klecks) | ❓ About (see spec.md) | 📝 No Dev Blog
+<div align="center">
+  Modern and feature-rich painting app for the web
+</div>
 
-<p style="text-align:center">
-<img src="https://bitbof.com/stuff/2022-01-klecks/2022-03-klecks-github.png" alt="Klecks"><br>
+<div align="center">
+  <h3>
+    <a href="https://kleki.com">
+      Try it out
+    </a>
+    <span> | </span>
+    <a href="https://kleki.com/about/">
+      About
+    </a>
+    <span> | </span>
+    <a href="https://blog.kleki.com">
+      Dev Blog
+    </a>
+    <span> | </span>
+    <a href="https://kleki.com/donate/">
+      Donate
+    </a>
+  </h3>
+</div>
+
+<p align="center">
+<img src="https://bitbof.com/stuff/2022-01-klecks/2026-03-28-klecks-github.png" alt="Klecks"><br>
 </p>
 
 Klecks (German for "splash of color", pronounced "clex") is the official open-source release of the community-funded online painting app [Kleki](https://kleki.com).
@@ -20,7 +44,7 @@ Piximal2-Klecks is a fork of Klecks by PaiShoFish49 to host his esolang: Piximal
 - Tools: selection, paint bucket, text, shapes, gradient
 - WebGL-powered filters: blur, tilt-shift, curves, distort, noise.
 - Lineart extraction
-- Editing tools: transform, crop/expand, resize, perspective
+- Editing tools: transform, warp, crop/expand, resize, perspective
 - Supports all major form factors: desktop, tablet and phone
 - Multi-language (10+ languages)
 - Piximal2
@@ -113,8 +137,8 @@ Piximal2-Klecks is a passion project and is not funded.
 
 # License
 
-bitbof © 2025 - Released under the MIT License. Icons by bitbof are public domain (excluding the Klecks logo, bitbof logo).
-While Kleki and Klecks are jointly developed, Kleki's license is separate from Klecks. Kleki must be licensed from bitbof.
+bitbof © 2026 - Released under the MIT License. Icons by bitbof are public domain (excluding the Klecks logo, bitbof logo).
+While Kleki and Klecks are jointly developed, Kleki's license is separate from Klecks. Kleki at [kleki.com](https://kleki.com) is free to use, but the name and brand "Kleki" are not covered by this license — you may not use Klecks to offer a service branded or presented as "Kleki" without a license from bitbof.
 
 Piximal2: PaiShoFish49 © 2026 - MIT License.
 

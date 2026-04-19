@@ -49,11 +49,14 @@
     box-sizing: border-box;
 }
 
+:root {
+    color-scheme: light;
+}
+
 body {
     overflow: hidden;
     font-size: 16px;
     overscroll-behavior-x: none; // prevent back gesture in Chrome
-    color-scheme: light;
 }
 
 body,
@@ -111,11 +114,11 @@ a:not([href]):hover {
 }
 
 .kl-toolspace--left {
-    border-right: 1px solid rgb(135, 135, 135);
+    border-right: 1px solid #bbb;
 }
 
 .kl-toolspace--right {
-    border-left: 1px solid rgb(135, 135, 135);
+    border-left: 1px solid #bbb;
 }
 
 .kl-toolspace-row {
@@ -196,10 +199,10 @@ a:not([href]):hover {
 }
 .kl-tooldropdown-caret > div {
     height: 100%;
-    background-image: url(../img/ui/caret-down.svg);
+    background-image: url(../img/ui/triangle-down.svg);
     background-repeat: no-repeat;
     background-position: center;
-    background-size: 60%;
+    background-size: 65%;
 }
 
 .toolspace-row-button-activated.kl-tool-button--hover > .kl-tooldropdown-caret {
@@ -559,6 +562,10 @@ button img,
     user-select: none;
     -webkit-user-select: none; // safari
 }
+.kl-checkbox--disabled {
+    pointer-events: none;
+    opacity: 0.5;
+}
 .kl-checkbox--highlight {
     background: #bed5ff;
 }
@@ -566,10 +573,16 @@ button img,
 .kl-checkbox__inner {
     cursor: pointer;
     color: rgba(0, 0, 0, 0.6);
+    img {
+        opacity: 0.8;
+    }
 }
 
 .kl-checkbox__inner:hover {
     color: rgba(0, 0, 0, 1);
+    img {
+        opacity: 1;
+    }
 }
 
 .kl-layer {

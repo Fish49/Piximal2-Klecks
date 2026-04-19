@@ -5,7 +5,6 @@ import { TVector2D } from '../../../bb/bb-types';
 import { PointerListener } from '../../../bb/input/pointer-listener';
 import {
     snapToPixel,
-    TFreeTransform,
     TFreeTransformCorner,
     TFreeTransformEdge,
     toImageSpace,
@@ -17,6 +16,7 @@ import { createMatrixFromTransform } from '../../../bb/transform/create-matrix-f
 import { applyToPoint, inverse } from 'transformation-matrix';
 import { pointsToAngleDeg } from '../../../bb/math/math';
 import { TWheelEvent } from '../../../bb/input/event.types';
+import { TFreeTransform } from '../../transform/transform-types';
 
 const gripSize = 16;
 const edgeSize = 10;
@@ -64,7 +64,7 @@ export class FreeTransform {
     */
 
     // --- private ---
-    private readonly value: TFreeTransform; // coordinates and dimensions of transformation
+    private value: TFreeTransform; // coordinates and dimensions of transformation
     private isConstrained: boolean;
     private ratio: number; // aspect ratio of transform
     private viewportTransform: TViewportTransform;
@@ -566,7 +566,7 @@ export class FreeTransform {
 
                     // snap to pixels
                     if (Math.abs(this.value.angleDeg) % 90 === 0) {
-                        snapToPixel(this.value);
+                        this.value = snapToPixel(this.value);
                         this.updateCornerPositions();
                     }
 
@@ -1009,7 +1009,7 @@ export class FreeTransform {
                 }
                 if (event.type === 'pointerup') {
                     if (Math.abs(this.value.angleDeg) % 90 === 0) {
-                        snapToPixel(this.value);
+                        this.value = snapToPixel(this.value);
                         this.updateCornerPositions();
                         this.updateDOM();
                     }
@@ -1019,7 +1019,7 @@ export class FreeTransform {
             onWheel: onWheel,
         });
 
-        snapToPixel(this.value);
+        this.value = snapToPixel(this.value);
         this.updateDOM(true);
         BB.append(this.transEl, [
             this.boundsEl,
@@ -1071,7 +1071,7 @@ export class FreeTransform {
         this.value.width = w;
         this.value.height = h;
         if (Math.abs(this.value.angleDeg) % 90 === 0) {
-            snapToPixel(this.value);
+            this.value = snapToPixel(this.value);
         }
         this.updateCornerPositions();
         this.updateDOM(false);
@@ -1091,7 +1091,7 @@ export class FreeTransform {
     setAngleDeg(a: number): void {
         this.value.angleDeg = a;
         if (Math.abs(this.value.angleDeg) % 90 === 0) {
-            snapToPixel(this.value);
+            this.value = snapToPixel(this.value);
             this.updateCornerPositions();
         }
         this.updateDOM(true);
@@ -1100,7 +1100,8 @@ export class FreeTransform {
     setViewportTransform(transform: TViewportTransform): void {
         this.viewportTransform = { ...transform };
         this.updateScaled();
-        this.updateDOM();
+        // skip callback because viewport change does not affect the value
+        this.updateDOM(true);
     }
 
     getElement(): HTMLElement {

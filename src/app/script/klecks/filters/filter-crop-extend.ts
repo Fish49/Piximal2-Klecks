@@ -7,8 +7,8 @@ import { TFilterApply, TFilterGetDialogParam, TFilterGetDialogResult, TRgba } fr
 import { LANG } from '../../language/language';
 import { TRect } from '../../bb/bb-types';
 import { SMALL_PREVIEW } from '../ui/utils/preview-size';
-import { intBoundsWithinArea } from '../../bb/math/math';
 import { getMultiPolyBounds } from '../../bb/multi-polygon/get-multi-polygon-bounds';
+import { indexBoundsInArea } from '../../bb/math/math';
 
 export type TFilterCropExtendInput = {
     left: number;
@@ -24,17 +24,8 @@ export const filterCropExtend = {
         if (!klCanvas) {
             return false;
         }
-        const tempCanvas = BB.canvas();
-        {
-            const fit = BB.fitInto(klCanvas.getWidth(), klCanvas.getHeight(), 560, 400, 1);
-            const w = parseInt('' + fit.width),
-                h = parseInt('' + fit.height);
-            const previewFactor = w / klCanvas.getWidth();
-            tempCanvas.width = w;
-            tempCanvas.height = h;
-            tempCanvas.style.display = 'block';
-            BB.ctx(tempCanvas).drawImage(klCanvas.getCompleteCanvas(previewFactor), 0, 0, w, h);
-        }
+        const tempCanvas = klCanvas.getCompleteCanvas(1);
+        tempCanvas.style.display = 'block';
 
         const rootEl = BB.el();
         const result: TFilterGetDialogResult<TFilterCropExtendInput> = {
@@ -54,15 +45,15 @@ export const filterCropExtend = {
 
         const selection = klCanvas.getSelection();
         let selectionBounds = selection
-            ? intBoundsWithinArea(
-                  getMultiPolyBounds(selection),
+            ? indexBoundsInArea(
+                  getMultiPolyBounds(selection, 'index'),
                   klCanvas.getWidth(),
                   klCanvas.getHeight(),
               )
             : undefined;
         if (selectionBounds) {
-            const boundsWidth = selectionBounds.x2 - selectionBounds.x1;
-            const boundsHeight = selectionBounds.y2 - selectionBounds.y1;
+            const boundsWidth = selectionBounds.x2 - selectionBounds.x1 + 1;
+            const boundsHeight = selectionBounds.y2 - selectionBounds.y1 + 1;
             if (boundsWidth <= maxWidth && boundsHeight <= maxHeight) {
                 top = selectionBounds.y1;
                 right = selectionBounds.x2 - klCanvas.getWidth();
@@ -289,6 +280,7 @@ export const filterCropExtend = {
 
             tempCanvas.style.width = klCanvas.getWidth() * scale + 'px';
             tempCanvas.style.height = klCanvas.getHeight() * scale + 'px';
+            tempCanvas.style.imageRendering = scale >= 1 ? 'pixelated' : '';
 
             offsetWrapper.style.left = offset.x - transform.x * scale + 'px';
             offsetWrapper.style.top = offset.y - transform.y * scale + 'px';
