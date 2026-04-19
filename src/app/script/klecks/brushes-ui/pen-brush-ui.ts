@@ -11,6 +11,7 @@ import { LANG, LANGUAGE_STRINGS } from '../../language/language';
 import { Options } from '../ui/components/options';
 import { PenBrush } from '../brushes/pen-brush';
 import { KlCanvas } from '../canvas/kl-canvas';
+import { getCanvasBounds } from '../../bb/base/canvas';
 
 export const penBrushUi = (function () {
     const brushInterface = {
@@ -300,7 +301,7 @@ export const penBrushUi = (function () {
             brush.setColor(c);
         };
         this.setLayer = function (layer) {
-            const bounds = BB.canvasBounds(layer.context);
+            const bounds = getCanvasBounds(layer.context);
             if (bounds !== undefined) {
                 const a = Math.max(bounds.height, bounds.width);
                 potentialCustomBrush = BB.canvas(a, a);

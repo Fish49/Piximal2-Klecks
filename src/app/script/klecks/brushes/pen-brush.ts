@@ -124,7 +124,6 @@ export class PenBrush {
                     instructionArr[i][1],
                 );
             }
-            console.log("idk", ctx.getImageData(16, 16, 5, 5));
 
             ctx.restore();
         }

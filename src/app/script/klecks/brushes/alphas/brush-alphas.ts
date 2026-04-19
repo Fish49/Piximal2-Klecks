@@ -83,7 +83,6 @@ export function genBrushAlpha02(w: number): HTMLCanvasElement {
     }
     
     ctx.putImageData(imData, 0, 0);
-    console.log(ctx.getImageData(16, 16, 10, 10))
     return canvas;
 }
 
@@ -118,7 +117,6 @@ export function genBrushAlpha04(w: number, data: HTMLCanvasElement | null = null
         ctx2.clearRect(0, 0, w, h);
         ctx2.drawImage(data, 0, 0, w, h);
     }
-    console.log(ctx2.getImageData(16, 16, 10, 10));
     return canvas;
 }
 

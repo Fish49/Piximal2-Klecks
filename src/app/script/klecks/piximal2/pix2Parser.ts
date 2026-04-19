@@ -92,7 +92,6 @@ export function draw(s: string, pix2: Piximal2) {
     s = s.replace(sl_comment, " ");
     s = s.replaceAll("\\\n", "");
     let toks = s.split(ws);
-    // console.log(toks);
     let terms: instruction[] = [];
     toks.forEach((element) => {
         if (element == "") {
@@ -132,7 +131,6 @@ export function draw(s: string, pix2: Piximal2) {
             ind++;
         } else if (element.kind == "keyword") {
             if (Object.hasOwn(defaultKeywords, element.value)) {
-                // console.log(element.value, kwrds[element.value].toString(2));
                 pix2.drawPixel(ind, pix2.intToColor(Number(kwrds[element.value])));
                 ind++;
             } else {

@@ -2,14 +2,13 @@ import { BB } from '../../bb/bb';
 import { draw } from "./pix2Parser";
 import { Easel } from "../ui/easel/easel";
 import { RGB } from "../../bb/color/color";
-import { TBounds } from '../../bb/bb-types';
+import { TIndexBounds } from '../../bb/bb-types';
 import { TKlAppToolId } from "../../app/kl-app";
 import { createArray } from '../../bb/base/base';
 import { isLayerFill, TRgb, TRgba } from '../kl-types';
 import { copyImageData } from '../utils/copy-image-data';
 import { createImageDataTile } from '../history/image-data-tile';
 import { KlHistory, HISTORY_TILE_SIZE } from "../history/kl-history";
-import { boundsOverlap, clamp, integerBounds } from '../../bb/math/math';
 import { getPushableLayerChange } from "../history/push-helpers/get-pushable-layer-change";
 import { getChangedTiles, updateChangedTiles } from "../history/push-helpers/changed-tiles";
 import { canvasAndChangedTilesToLayerTiles } from "../history/push-helpers/canvas-to-layer-tiles";
@@ -74,7 +73,7 @@ export class Piximal2 {
     private ui: Piximal2Ui | undefined;
 
     private klHistory: KlHistory = {} as KlHistory;
-    private redrawBounds: TBounds | undefined;
+    private redrawBounds: TIndexBounds | undefined;
     private cells: (ImageData | undefined)[] = [];
 
     easel: Easel<TKlAppToolId>;
@@ -127,7 +126,6 @@ export class Piximal2 {
     pushHistory() {
         this.drawChangedCells();
         if (this.cells.some((item) => item)) {
-            console.log(this.cells);
             this.klHistory.push(
                 getPushableLayerChange(
                     this.klHistory.getComposed(),
@@ -186,10 +184,11 @@ export class Piximal2 {
         return Math.ceil(this.context.canvas.width / HISTORY_TILE_SIZE);
     }
 
-    private getTouchedCells(bounds: TBounds): boolean[] {
+    private getTouchedCells(bounds: TIndexBounds): boolean[] {
         const touchedCells = this.cells.map(() => false);
         const cellsW = this.getCellsWidth();
         bounds = {
+            type: "index",
             x1: Math.floor(bounds.x1 / HISTORY_TILE_SIZE),
             y1: Math.floor(bounds.y1 / HISTORY_TILE_SIZE),
             x2: Math.floor(bounds.x2 / HISTORY_TILE_SIZE),
@@ -206,7 +205,7 @@ export class Piximal2 {
     /**
      * update copyImageData. copy over new regions if needed
      */
-    private copyFromCanvas(bounds: TBounds | undefined): void {
+    private copyFromCanvas(bounds: TIndexBounds | undefined): void {
         if (!bounds) {
             return;
         }
@@ -238,9 +237,9 @@ export class Piximal2 {
      * @param bounds
      * @private
      */
-    private sliceBounds(bounds: TBounds): { index: number; bounds: TBounds }[] {
+    private sliceBounds(bounds: TIndexBounds): { index: number; bounds: TIndexBounds }[] {
         const cellsW = this.getCellsWidth();
-        const result: { index: number; bounds: TBounds }[] = [];
+        const result: { index: number; bounds: TIndexBounds }[] = [];
         const touchedCells = this.getTouchedCells(bounds);
 
         touchedCells.forEach((cell, i) => {
@@ -253,7 +252,8 @@ export class Piximal2 {
             const cellWidth = this.cells[i]!.width;
             const cellHeight = this.cells[i]!.height;
 
-            const inCellBounds = {
+            const inCellBounds: TIndexBounds = {
+                type: "index",
                 x1: Math.max(0, bounds.x1 - cellOffsetX),
                 y1: Math.max(0, bounds.y1 - cellOffsetY),
                 x2: Math.min(cellWidth - 1, bounds.x2 - cellOffsetX),
@@ -272,8 +272,7 @@ export class Piximal2 {
     }
 
     drawPixelAtCoords(x: number, y: number, color: RGB) {
-        // console.log(this.cells.length);// - this.cells.filter((value) => value === undefined).length);
-        const bounds: TBounds = {x1: x, y1: y, x2: x + 1, y2: y + 1};
+        const bounds: TIndexBounds = {type: "index", x1: x, y1: y, x2: x + 1, y2: y + 1};
         this.copyFromCanvas(bounds);
         const slice = this.sliceBounds(bounds)[0];
         const cell = this.cells[slice.index];
@@ -287,7 +286,7 @@ export class Piximal2 {
     }
 
     getPixelAtCoords(x: number, y: number) {
-        const bounds: TBounds = {x1: x, y1: y, x2: x + 1, y2: y + 1};
+        const bounds: TIndexBounds = {type: "index", x1: x, y1: y, x2: x + 1, y2: y + 1};
         const cellsW = this.getCellsWidth();
         const cellIndex = Math.floor(y / HISTORY_TILE_SIZE) * cellsW + Math.floor(x / HISTORY_TILE_SIZE);
         if (!this.cells[cellIndex]) {
