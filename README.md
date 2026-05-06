@@ -34,6 +34,21 @@ Klecks (German for "splash of color", pronounced "clex") is the official open-so
 
 Klecks can run in standalone mode (e.g. on [kleki.com](https://kleki.com)), or embed (e.g. on [2draw.net](https://2draw.net)) for drawing communities.
 
+<div align="center">
+ <img src="src/app/img/piximal2-logo.png" alt="Piximal 2" title="Klecks" style="width:180px;image-rendering:pixelated;">
+</div>
+
+<div align="center">
+  Image-based esolang implemented in Klecks
+</div>
+
+<div align="center">
+  <h3>
+    <a href="https://paishofish49.net/piximal2-klecks">
+      Try it out
+    </a>
+  </h3>
+</div>
 Piximal2-Klecks is a fork of Klecks by PaiShoFish49 to host his esolang: Piximal2
 
 ## Features

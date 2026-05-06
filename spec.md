@@ -31,12 +31,12 @@ the [datasheet](https://docs.google.com/spreadsheets/d/1l8HzEkNCA6sCJ4xKUMFpFY8G
 ## Pointers
 - there are two types of pointer: special and raw.
 - raw pointers are simply a pixel with the index they point to.
-- for huge images, raw pointers will be multiple pixels long, big endian. There will be sufficiently many pixel per raw pointer such that every pixel can be represented in one less than the total available bits in that many pixels (basically you can point to any pixel on the image)
+- for huge images (more than 2^23 pixels), raw pointers will be multiple pixels long, big endian. There will be sufficiently many pixel per raw pointer such that every pixel can be represented in one less than the total available bits in that many pixels (basically you can point to any pixel on the image)
 - special pointers are a single pixel with the first bit active (the red value is greater than or equal to 128). the remaining bits specify the type of special pointer. (see the [data sheet](https://docs.google.com/spreadsheets/d/1l8HzEkNCA6sCJ4xKUMFpFY8GZ-6lLepWTM-r2CtAgQQ/edit?usp=sharing))
 - each pointer supports 4 operations: next index, literal, read, and write.
 - next index tells you what is the index of the first pixel not consumed by the definition of this pointer (the complete definition of a pointer may be any number of pixels, this tells you where it ends)
 - literal tells you exactly what the pointer is pointing *to*. for raw pointers this is just their value, but for `os` for example, it depends on the offset. some special pointers represent data that is not *in* the image. the literal value of these pointers will simply be the origin of the image.
-- read returns a pixel. for raw pointers this simply returns the pixel they are pointing to, but for `wp` for example, it returns a pixel that may not actually exist in the image at all.
+- read returns a pixel. for raw pointers this simply returns the pixel they are pointing to, but for `wp` for example, it returns a completely white pixel, even if no such pixel exists on the actual image.
 - write takes a pixel value and does something with it. for raw pointers this just writes that pixel to the place they are pointing. For special pointer that are meant to be read, writing to them will simply discard (`wp` for example)
 
 ## Pix2 Assembly

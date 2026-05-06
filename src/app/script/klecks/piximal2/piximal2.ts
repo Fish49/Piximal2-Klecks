@@ -67,6 +67,14 @@ const mnemonics = [
     "consume"
 ]
 
+const SMALLEST_NORMAL_32 = 2.22507385850720138309e-308;
+const BIAS_24 = 0b0111111; // 63
+const SMALLEST_NORMAL_24 = 2.16840434497100886801e-19;
+const BIGGEST_24 = 18446603336221196288.0;
+const INF_24_REPR = Number.parseInt("0 111_1111 0000_0000 0000_0000".replace(/[_ ]*/g, ""),2);
+const NEG_INF_24_REPR = Number.parseInt("1 111_1111 0000_0000 0000_0000".replace(/[_ ]*/g, ""),2);
+const NAN_24_REPR = Number.parseInt("0 111_1111 1000_0000 0000_0000".replace(/[_ ]*/g, ""),2);
+
 export class Piximal2 {
     private context: CanvasRenderingContext2D = {} as CanvasRenderingContext2D;
     private eyedropper = new Eyedropper();
@@ -645,6 +653,72 @@ export class Piximal2 {
 
     moveExecutionPointer(threadPointerInd: number, newInd: number) {
         this.writePointerToInd(this.getNextIndAfterPointer(this.getLiteralPointer(threadPointerInd)), newInd);
+    }
+
+    numberToFloat24(x: number) {
+        let output = 0;
+        if (Number.isNaN(x)) {
+            return NAN_24_REPR;
+        }
+        if (x > BIGGEST_24) {
+            return INF_24_REPR;
+        }
+        if (x < -BIGGEST_24) {
+            return NEG_INF_24_REPR;
+        }
+        if (x < 0 || Object.is(x, -0.0)) {
+            output |= 1 << 23;
+        }
+        x = Math.abs(x);
+
+        let exponent = 0; //52
+        while ((x >= 2 || x < 1) && exponent > -62) {
+            if (x >= 2) {
+                exponent += 1;
+                x /= 2;
+            } else if (x < 1) {
+                exponent -= 1;
+                x *= 2;
+            }
+        }
+        if (x < 1) {
+            exponent -= 1;
+        } else {
+            x -= 1;
+        }
+        // console.log(exponent);
+        x *= 2**16;
+        x = Math.round(x);
+        while (x >> 16 >= 1) {
+            if (exponent >= 63) {
+                return INF_24_REPR | output;
+            }
+            x >>= 1
+            exponent += 1
+        }
+        return output | ((exponent + BIAS_24) << 16) | (x & 0xFFFF);
+    }
+
+    float24ToNumber(x: number) {
+        let exponent = (x >> 16) & 0b111_1111;
+        let fraction = x & 0xFFFF;
+        let sign = -2*((x >> 23) & 1) + 1;
+        if (exponent === 0b111_1111) {
+            if (fraction != 0) {
+                return NaN;
+            }
+            if (sign === -1) {
+                return Number.NEGATIVE_INFINITY;
+            }
+            return Number.POSITIVE_INFINITY;
+        }
+        fraction /= 2**16
+        if (exponent === 0) {
+            return fraction;
+        }
+        exponent -= BIAS_24;
+        fraction += 1;
+        return sign * fraction * (2**exponent);
     }
 
     step(verbose: boolean) {
