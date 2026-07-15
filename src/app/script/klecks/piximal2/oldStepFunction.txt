@@ -1,0 +1,1280 @@
+    step(verbose: boolean) {
+        let versionPixel = this.getPixel(0);
+        if (versionPixel.r != 0 || versionPixel.g != 0 || versionPixel.b != 2) {return;} // return if not version 2
+        for (this.threadIndex = 0; this.threadIndex < this.colorToInt(this.getPixel(2)); this.threadIndex++) {
+            let threadPointerInd = this.getThreadPointerInd();
+            let executionPointer = this.getLiteralPointer(this.getNextIndAfterPointer(this.getLiteralPointer(threadPointerInd)));
+            let instruction = this.colorToInt(this.getPixel(executionPointer));
+            let argumentPointer = executionPointer + 1;
+            if (verbose) {
+                console.log(instruction, mnemonics[instruction]);
+            }
+            switch (instruction) {
+                case 0:
+                default: {
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    break;
+                }
+                case 1: {
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    break;
+                }
+                case 2: {
+                    let value = this.readPointer(argumentPointer);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let outPointer = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(outPointer, value);
+                    break;
+                }
+                case 3: {
+                    let valueA = this.readPointer(argumentPointer);
+                    let pointerA = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let valueB = this.readPointer(argumentPointer);
+                    let pointerB = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(pointerA, valueB);
+                    this.writePointer(pointerB, valueA);
+                    break;
+                }
+                case 4: {
+                    let stackTop = this.getLiteralPointer(this.getLiteralPointer(threadPointerInd));
+                    let currentFuncNumOfArguments = this.colorToInt(this.getPixel(this.getLiteralPointer(stackTop)));
+                    let currentFuncLocalBufferSize = this.colorToInt(this.getPixel(this.getLiteralPointer(stackTop) + 1));
+                    let newStackTop = this.getNextIndAfterPointer(this.getNextIndAfterPointer(this.getNextIndAfterPointer(stackTop))) +
+                        currentFuncNumOfArguments +
+                        currentFuncLocalBufferSize;
+                    let func = this.getLiteralPointer(argumentPointer);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let newFuncNumOfArguments = this.colorToInt(this.getPixel(func));
+                    let argumentPixels = this.readPixelString(argumentPointer, newFuncNumOfArguments);
+                    argumentPointer += newFuncNumOfArguments;
+                    let stackFrameBuilder = newStackTop;
+                    this.writePointerToInd(this.getLiteralPointer(threadPointerInd), newStackTop);
+                    this.moveExecutionPointer(threadPointerInd, func + 2);
+                    this.writePointerToInd(stackFrameBuilder, func);
+                    stackFrameBuilder = this.getNextIndAfterPointer(stackFrameBuilder);
+                    this.writePointerToInd(stackFrameBuilder, stackTop);
+                    stackFrameBuilder = this.getNextIndAfterPointer(stackFrameBuilder);
+                    this.writePointerToInd(stackFrameBuilder, argumentPointer);
+                    stackFrameBuilder = this.getNextIndAfterPointer(stackFrameBuilder);
+                    this.writePixelString(stackFrameBuilder, argumentPixels);
+                    break;
+                }
+                case 5: {
+                    let stackTop = this.getLiteralPointer(this.getLiteralPointer(threadPointerInd));
+                    let newStackTop = this.getLiteralPointer(this.getNextIndAfterPointer(stackTop));
+                    let newExecutionPointer = this.getLiteralPointer(this.getNextIndAfterPointer(this.getNextIndAfterPointer(stackTop)));
+                    this.moveExecutionPointer(threadPointerInd, newExecutionPointer);
+                    this.writePointerToInd(this.getLiteralPointer(threadPointerInd), newStackTop);
+                    break;
+                }
+                case 6: {
+                    let condition = this.colorToInt(this.readPointer(argumentPointer));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let trueCase = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    if (condition != 0) {
+                        this.moveExecutionPointer(threadPointerInd, this.getLiteralPointer(trueCase));
+                    } else {
+                        this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    }
+                    break;
+                }
+                case 7: {
+                    let condition = this.colorToInt(this.readPointer(argumentPointer));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let trueCase = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let falseCase = argumentPointer;
+                    if (condition != 0) {
+                        this.moveExecutionPointer(threadPointerInd, this.getLiteralPointer(trueCase));
+                    } else {
+                        this.moveExecutionPointer(threadPointerInd, this.getLiteralPointer(falseCase));
+                    }
+                    break;
+                }
+                case 8: {
+                    this.moveExecutionPointer(threadPointerInd, this.getLiteralPointer(argumentPointer));
+                    break;
+                }
+                case 9: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(out, this.intToColor(this.colorToInt(this.readPointer(a)) + this.colorToInt(this.readPointer(b))));
+                    break;
+                }
+                case 10: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(out, this.intToColor(this.colorToInt(this.readPointer(a)) - this.colorToInt(this.readPointer(b))));
+                    break;
+                }
+                case 11: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(out, this.intToColor(this.colorToInt(this.readPointer(a)) * this.colorToInt(this.readPointer(b))));
+                    break;
+                }
+                case 12: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    if (this.colorToInt(this.readPointer(b)) == 0) {
+                        break;
+                    }
+                    this.writePointer(out, this.intToColor(Math.trunc(this.colorToInt(this.readPointer(a)) / this.colorToInt(this.readPointer(b)))));
+                    break;
+                }
+                case 13: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(out, this.intToColor(this.colorToInt(this.readPointer(a)) % this.colorToInt(this.readPointer(b))));
+                    break;
+                }
+                case 14: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(out, this.intToColor(-this.colorToInt(this.readPointer(a))));
+                    break;
+                }
+                case 15: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(out, this.intToColor(this.colorToInt(this.readPointer(a)) << this.colorToInt(this.readPointer(b))));
+                    break;
+                }
+                case 16: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(out, this.intToColor(this.colorToInt(this.readPointer(a)) >> this.colorToInt(this.readPointer(b))));
+                    break;
+                }
+                case 17: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let outA = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let outB = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(outA, this.intToColor(this.colorToInt(this.readPointer(a)) << this.colorToInt(this.readPointer(b))));
+                    this.writePointer(outB, this.intToColor(this.colorToInt(this.readPointer(a)) >> (24 - this.colorToInt(this.readPointer(b)))));
+                    break;
+                }
+                case 18: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let outA = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let outB = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(outA, this.intToColor(this.colorToInt(this.readPointer(a)) >> this.colorToInt(this.readPointer(b))));
+                    this.writePointer(outB, this.intToColor(this.colorToInt(this.readPointer(a)) << (24 - this.colorToInt(this.readPointer(b)))));
+                    break;
+                }
+                case 19: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let result = (this.colorToInt(this.readPointer(a)) << this.colorToInt(this.readPointer(b))) |
+                        (this.colorToInt(this.readPointer(a)) >> (24 - this.colorToInt(this.readPointer(b))));
+                    this.writePointer(out, this.intToColor(result));
+                    break;
+                }
+                case 20: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let result = (this.colorToInt(this.readPointer(a)) >> this.colorToInt(this.readPointer(b))) |
+                        (this.colorToInt(this.readPointer(a)) << (24 - this.colorToInt(this.readPointer(b))));
+                    this.writePointer(out, this.intToColor(result));
+                    break;
+                }
+                case 21: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let r = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let g = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let color = this.readPointer(a)
+                    this.writePointer(r, this.intToColor(color.r));
+                    this.writePointer(g, this.intToColor(color.g));
+                    this.writePointer(b, this.intToColor(color.b));
+                    break;
+                }
+                case 22: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(out, this.intToColor(Math.max(this.colorToInt(this.readPointer(a)), this.colorToInt(this.readPointer(b)))));
+                    break;
+                }
+                case 23: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(out, this.intToColor(Math.min(this.colorToInt(this.readPointer(a)), this.colorToInt(this.readPointer(b)))));
+                    break;
+                }
+                case 24: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(out, this.intToColor(Math.abs(this.colorToInt(this.readPointer(a)))));
+                    break;
+                }
+                case 25: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(out, this.intToColor(~this.colorToInt(this.readPointer(a))));
+                    break;
+                }
+                case 26: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(out, this.intToColor(this.colorToInt(this.readPointer(a)) | this.colorToInt(this.readPointer(b))));
+                    break;
+                }
+                case 27: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(out, this.intToColor(this.colorToInt(this.readPointer(a)) & this.colorToInt(this.readPointer(b))));
+                    break;
+                }
+                case 28: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(out, this.intToColor(this.colorToInt(this.readPointer(a)) ^ this.colorToInt(this.readPointer(b))));
+                    break;
+                }
+                case 29: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(out, this.intToColor(~(this.colorToInt(this.readPointer(a)) | this.colorToInt(this.readPointer(b)))));
+                    break;
+                }
+                case 30: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(out, this.intToColor(~(this.colorToInt(this.readPointer(a)) & this.colorToInt(this.readPointer(b)))));
+                    break;
+                }
+                case 31: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(out, this.intToColor(~(this.colorToInt(this.readPointer(a)) ^ this.colorToInt(this.readPointer(b)))));
+                    break;
+                }
+                case 32: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let result = this.colorToInt(this.readPointer(a)) == this.colorToInt(this.readPointer(b));
+                    this.writePointer(out, result? COLOR_WHITE : COLOR_ZERO);
+                    break;
+                }
+                case 33: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let result = this.colorToInt(this.readPointer(a)) == this.colorToInt(this.readPointer(b));
+                    this.writePointer(out, result? COLOR_ZERO : COLOR_WHITE);
+                    break;
+                }
+                case 34: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let result = this.colorToInt(this.readPointer(a)) < this.colorToInt(this.readPointer(b));
+                    this.writePointer(out, result? COLOR_WHITE : COLOR_ZERO);
+                    break;
+                }
+                case 35: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let result = this.colorToInt(this.readPointer(a)) > this.colorToInt(this.readPointer(b))
+                    this.writePointer(out, result? COLOR_WHITE : COLOR_ZERO);
+                    break;
+                }
+                case 36: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let result = this.colorToInt(this.readPointer(a)) <= this.colorToInt(this.readPointer(b))
+                    this.writePointer(out, result? COLOR_WHITE : COLOR_ZERO);
+                    break;
+                }
+                case 37: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let result = this.colorToInt(this.readPointer(a)) >= this.colorToInt(this.readPointer(b))
+                    this.writePointer(out, result? COLOR_WHITE : COLOR_ZERO);
+                    break;
+                }
+                case 38: {
+                    let condition = this.colorToInt(this.readPointer(argumentPointer));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let trueCase = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let falseCase = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(out, condition == 0? this.readPointer(falseCase) : this.readPointer(trueCase));
+                    break;
+                }
+                case 39: {
+                    let condition = this.colorToInt(this.readPointer(argumentPointer));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(out, condition == 0? COLOR_WHITE : COLOR_ZERO);
+                    break;
+                }
+                case 40: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.colorToInt(this.readPointer(argumentPointer));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let condition = (a != 0) || (b != 0);
+                    this.writePointer(out, condition? COLOR_WHITE : COLOR_ZERO);
+                    break;
+                }
+                case 41: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.colorToInt(this.readPointer(argumentPointer));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let condition = (a != 0) && (b != 0);
+                    this.writePointer(out, condition? COLOR_WHITE : COLOR_ZERO);
+                    break;
+                }
+                case 42: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.colorToInt(this.readPointer(argumentPointer));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let condition = (a != 0)? (b == 0) : (b != 0);
+                    this.writePointer(out, condition? COLOR_WHITE : COLOR_ZERO);
+                    break;
+                }
+                case 43: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.colorToInt(this.readPointer(argumentPointer));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let condition = !((a != 0) || (b != 0));
+                    this.writePointer(out, condition? COLOR_WHITE : COLOR_ZERO);
+                    break;
+                }
+                case 44: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.colorToInt(this.readPointer(argumentPointer));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let condition = !((a != 0) && (b != 0));
+                    this.writePointer(out, condition? COLOR_WHITE : COLOR_ZERO);
+                    break;
+                }
+                case 45: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.colorToInt(this.readPointer(argumentPointer));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let condition = (a != 0)? (b != 0) : (b == 0);
+                    this.writePointer(out, condition? COLOR_WHITE : COLOR_ZERO);
+                    break;
+                }
+                case 46: {
+                    let condition = this.colorToInt(this.readPointer(argumentPointer));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(out, condition == 0? COLOR_ZERO : COLOR_WHITE);
+                    break;
+                }
+                case 47: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointerToInd(this.getLiteralPointer(out), this.getLiteralPointer(a));
+                    break;
+                }
+                case 48: {
+                    let a = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointerToInd(this.getLiteralPointer(out), this.getNextIndAfterPointer(this.getLiteralPointer(a)));
+                    break;
+                }
+                case 49: {
+                    let condition = this.colorToInt(this.readPointer(argumentPointer));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let falseCase = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    if (condition != 0) {
+                        this.moveExecutionPointer(threadPointerInd, this.getLiteralPointer(falseCase));
+                    } else {
+                        this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    }
+                    break;
+                }
+                case 50: {
+                    let condition = this.colorToInt(this.readPointer(argumentPointer));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    if (condition == 0) {
+                        this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    }
+                    break;
+                }
+                case 51: {
+                    let condition = this.colorToInt(this.readPointer(argumentPointer));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    if (condition != 0) {
+                        this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    }
+                    break;
+                }
+
+                case 512: {
+                    let float24 = this.float24ToNumber(this.colorToInt(this.readPointer(argumentPointer)));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(out, this.intToColor(float24));
+                    break;
+                }
+                case 513: {
+                    let int = this.colorToInt(this.readPointer(argumentPointer));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    this.writePointer(out, this.intToColor(this.numberToFloat24(int)));
+                    break;
+                }
+                case 514: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.colorToInt(this.readPointer(argumentPointer));
+                    let bNum = this.float24ToNumber(b);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else if (Number.isNaN(bNum)) {
+                        output = this.intToColor(b);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(aNum+bNum));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 515: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.colorToInt(this.readPointer(argumentPointer));
+                    let bNum = this.float24ToNumber(b);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else if (Number.isNaN(bNum)) {
+                        output = this.intToColor(b);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(aNum-bNum));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 516: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.colorToInt(this.readPointer(argumentPointer));
+                    let bNum = this.float24ToNumber(b);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else if (Number.isNaN(bNum)) {
+                        output = this.intToColor(b);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(aNum*bNum));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 517: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.colorToInt(this.readPointer(argumentPointer));
+                    let bNum = this.float24ToNumber(b);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else if (Number.isNaN(bNum)) {
+                        output = this.intToColor(b);
+                    } else if (bNum === 0.0) {
+                        output = this.intToColor(NAN_24_REPR);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(aNum/bNum));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 518: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.colorToInt(this.readPointer(argumentPointer));
+                    let bNum = this.float24ToNumber(b);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else if (Number.isNaN(bNum)) {
+                        output = this.intToColor(b);
+                    } else if (bNum === 0.0) {
+                        output = this.intToColor(NAN_24_REPR);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(aNum%bNum));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 519: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else {
+                        output = output = this.intToColor(this.numberToFloat24(-aNum));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 520: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.colorToInt(this.readPointer(argumentPointer));
+                    let bNum = this.float24ToNumber(b);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else if (Number.isNaN(bNum)) {
+                        output = this.intToColor(b);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(Math.max(aNum,bNum)));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 521: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.colorToInt(this.readPointer(argumentPointer));
+                    let bNum = this.float24ToNumber(b);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else if (Number.isNaN(bNum)) {
+                        output = this.intToColor(b);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(Math.min(aNum,bNum)));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 522: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(Math.abs(aNum)));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 523: {
+                    let a = this.float24ToNumber(this.colorToInt(this.readPointer(argumentPointer)));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.float24ToNumber(this.colorToInt(this.readPointer(argumentPointer)));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(a) || Number.isNaN(b)) {
+                        output = COLOR_ZERO;
+                    } else {
+                        output = a == b? COLOR_WHITE : COLOR_ZERO;
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 524: {
+                    let a = this.float24ToNumber(this.colorToInt(this.readPointer(argumentPointer)));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.float24ToNumber(this.colorToInt(this.readPointer(argumentPointer)));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(a) || Number.isNaN(b)) {
+                        output = COLOR_ZERO;
+                    } else {
+                        output = a != b? COLOR_WHITE : COLOR_ZERO;
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 525: {
+                    let a = this.float24ToNumber(this.colorToInt(this.readPointer(argumentPointer)));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.float24ToNumber(this.colorToInt(this.readPointer(argumentPointer)));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(a) || Number.isNaN(b)) {
+                        output = COLOR_ZERO;
+                    } else {
+                        output = a < b? COLOR_WHITE : COLOR_ZERO;
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 526: {
+                    let a = this.float24ToNumber(this.colorToInt(this.readPointer(argumentPointer)));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.float24ToNumber(this.colorToInt(this.readPointer(argumentPointer)));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(a) || Number.isNaN(b)) {
+                        output = COLOR_ZERO;
+                    } else {
+                        output = a > b? COLOR_WHITE : COLOR_ZERO;
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 527: {
+                    let a = this.float24ToNumber(this.colorToInt(this.readPointer(argumentPointer)));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.float24ToNumber(this.colorToInt(this.readPointer(argumentPointer)));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(a) || Number.isNaN(b)) {
+                        output = COLOR_ZERO;
+                    } else {
+                        output = a <= b? COLOR_WHITE : COLOR_ZERO;
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 528: {
+                    let a = this.float24ToNumber(this.colorToInt(this.readPointer(argumentPointer)));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.float24ToNumber(this.colorToInt(this.readPointer(argumentPointer)));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(a) || Number.isNaN(b)) {
+                        output = COLOR_ZERO;
+                    } else {
+                        output = a >= b? COLOR_WHITE : COLOR_ZERO;
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 529: {
+                    let a = this.float24ToNumber(this.colorToInt(this.readPointer(argumentPointer)));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.float24ToNumber(this.colorToInt(this.readPointer(argumentPointer)));
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                        
+                    this.writePointer(out, Object.is(a, b)? COLOR_WHITE : COLOR_ZERO);
+                    break;
+                }
+                case 530: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else {
+                        output = a < 0 || Object.is(-0.0,a)? COLOR_WHITE : COLOR_ZERO;
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 531: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else {
+                        output = Number.isFinite(aNum)? COLOR_WHITE : COLOR_ZERO;
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 532: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else {
+                        output = Number.isNaN(a)? COLOR_WHITE : COLOR_ZERO;
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 533: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(Math.floor(aNum)));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 534: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(Math.ceil(aNum)));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 535: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(Math.trunc(aNum)));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 536: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(Math.round(aNum)));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 537: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.colorToInt(this.readPointer(argumentPointer));
+                    let bNum = this.float24ToNumber(b);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else if (Number.isNaN(bNum)) {
+                        output = this.intToColor(b);
+                    } else if (bNum === 0.0) {
+                        output = this.intToColor(NAN_24_REPR);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(Math.round(aNum*bNum)/bNum));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 538: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else if (aNum === 0.0) {
+                        output = this.intToColor(NAN_24_REPR);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(1/aNum));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 539: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.colorToInt(this.readPointer(argumentPointer));
+                    let bNum = this.float24ToNumber(b);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else if (Number.isNaN(bNum)) {
+                        output = this.intToColor(b);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(aNum**bNum));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 540: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else if (aNum < 0.0) {
+                        output = this.intToColor(NAN_24_REPR);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(Math.sqrt(aNum)));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 541: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(Math.exp(aNum)));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 542: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(2**aNum));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 543: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(10**aNum));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 544: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else if (aNum < 0.0) {
+                        output = this.intToColor(NAN_24_REPR);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(Math.log(aNum)));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 545: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else if (aNum < 0.0) {
+                        output = this.intToColor(NAN_24_REPR);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(Math.log2(aNum)));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 546: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else if (aNum < 0.0) {
+                        output = this.intToColor(NAN_24_REPR);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(Math.log10(aNum)));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 547: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let b = this.colorToInt(this.readPointer(argumentPointer));
+                    let bNum = this.float24ToNumber(b);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else if (Number.isNaN(bNum)) {
+                        output = this.intToColor(b);
+                    } else if (aNum < 0.0 || b <= 0.0 || b === 1.0) {
+                        output = this.intToColor(NAN_24_REPR);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(Math.log(aNum)/Math.log(bNum)));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 548: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else if (aNum < 0.0) {
+                        output = this.intToColor(NAN_24_REPR);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(Math.PI*aNum/180.0));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 549: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else if (aNum < 0.0) {
+                        output = this.intToColor(NAN_24_REPR);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(180.0*aNum/Math.PI));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+                case 550: {
+                    let a = this.colorToInt(this.readPointer(argumentPointer));
+                    let aNum = this.float24ToNumber(a);
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    let out = argumentPointer;
+                    argumentPointer = this.getNextIndAfterPointer(argumentPointer);
+                    this.moveExecutionPointer(threadPointerInd, argumentPointer);
+                    let output = this.intToColor(NAN_24_REPR);
+                    if (Number.isNaN(aNum)) {
+                        output = this.intToColor(a);
+                    } else if (aNum < 0.0) {
+                        output = this.intToColor(NAN_24_REPR);
+                    } else {
+                        output = this.intToColor(this.numberToFloat24(aNum%(Math.PI*2)));
+                    }
+                    this.writePointer(out, output);
+                    break;
+                }
+            }
+        }
+    }

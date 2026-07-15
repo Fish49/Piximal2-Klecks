@@ -1,0 +1,35 @@
+2 0 1 thread1
+thread1: ep1 0 0
+x1: 0
+x2: 0.0
+y2: 0.0
+y1: 0
+iter1: 0
+offsetX: 0
+offsetY: 0
+cond1: 0
+ep1:
+div wp im 2 offsetX
+itof offsetX offsetX
+div hp im 2 offsetY
+copy wp iter1
+loopBegin:
+le iter1 p0 cond1
+jumpif cond1 loopEnd
+
+itof x1 x2
+fsub x2 offsetX x2
+fdiv x2 im 20.0 x2
+sin x2 y2
+fmult y2 im -20.0 y2
+ftoi y2 y1
+add y1 offsetY y1
+copy p0 coord x1 y1
+
+add x1 p1 x1
+sub iter1 p1 iter1
+jump loopBegin
+loopEnd:
+copy p0 0
+trap:
+jump trap

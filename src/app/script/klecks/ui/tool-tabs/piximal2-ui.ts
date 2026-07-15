@@ -91,14 +91,15 @@ export class Piximal2Ui {
     }
 
     private getPointInfo(x: number, y: number): string {
-        if (x < 0 || x >= this.piximal2.getWidth() || y < 0 || y >= this.piximal2.getHeight()) {
+        if (x < 0 || x >= this.piximal2.width || y < 0 || y >= this.piximal2.height) {
             return "";
         }
         let ind = this.piximal2.coordsToInd(x, y);
         let color = this.piximal2.getPixelAtCoords(x, y);
         let int = this.piximal2.colorToInt(color);
+        let float = this.piximal2.float24ToNumber(int);
         let literal = this.piximal2.getLiteralPointer(ind);
-        return `(${x}, ${y})<br>index: ${ind}<br>color: ${color.r}, ${color.g}, ${color.b}<br>hex: ${int.toString(16)}<br>dec: ${int}<br>pointer: ${literal}`;
+        return `(${x}, ${y})<br>index: ${ind}<br>color: ${color.r}, ${color.g}, ${color.b}<br>hex: ${int.toString(16)}<br>dec: ${int}<br>float24: ${float}<br>pointer: ${literal}`;
     }
 
     private init(): void {

@@ -1,0 +1,1692 @@
+[
+    {
+        "opcode": 0,
+        "arguments": [],
+        "mnemonic": "stall",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 1,
+        "arguments": [
+            {}
+        ],
+        "mnemonic": "comment",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 2,
+        "arguments": [
+            ["color"],
+            ["outputColor"]
+        ],
+        "mnemonic": "copy",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 3,
+        "arguments": [
+            ["color", "outputColor"],
+            ["color", "outputColor"]
+        ],
+        "mnemonic": "swap",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 6,
+        "arguments": [
+            ["bool"],
+            ["pointer"]
+        ],
+        "mnemonic": "jumpif",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 7,
+        "arguments": [
+            ["bool"],
+            ["pointer"],
+            ["pointer"]
+        ],
+        "mnemonic": "branch",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 8,
+        "arguments": [
+            ["pointer"]
+        ],
+        "mnemonic": "jump",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 9,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputInt"]
+        ],
+        "mnemonic": "add",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 10,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputInt"]
+        ],
+        "mnemonic": "sub",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 11,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputInt"]
+        ],
+        "mnemonic": "mult",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 12,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputInt"]
+        ],
+        "mnemonic": "div",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 13,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputInt"]
+        ],
+        "mnemonic": "mod",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 14,
+        "arguments": [
+            ["int"],
+            ["outputInt"]
+        ],
+        "mnemonic": "neg",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 15,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputInt"]
+        ],
+        "mnemonic": "lshift",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 16,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputInt"]
+        ],
+        "mnemonic": "rshift",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 17,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputInt"]
+        ],
+        "mnemonic": "lshifto",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 18,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputInt"]
+        ],
+        "mnemonic": "rshifto",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 19,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputInt"]
+        ],
+        "mnemonic": "lrot",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 20,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputInt"]
+        ],
+        "mnemonic": "rrot",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 21,
+        "arguments": [
+            ["color"],
+            ["outputInt"],
+            ["outputInt"],
+            ["outputInt"]
+        ],
+        "mnemonic": "decompose",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 22,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputInt"]
+        ],
+        "mnemonic": "max",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 23,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputInt"]
+        ],
+        "mnemonic": "min",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 24,
+        "arguments": [
+            ["int"],
+            ["outputInt"]
+        ],
+        "mnemonic": "abs",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 25,
+        "arguments": [
+            ["int"],
+            ["outputInt"]
+        ],
+        "mnemonic": "not",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 26,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputInt"]
+        ],
+        "mnemonic": "or",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 27,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputInt"]
+        ],
+        "mnemonic": "and",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 28,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputInt"]
+        ],
+        "mnemonic": "xor",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 29,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputInt"]
+        ],
+        "mnemonic": "nor",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 30,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputInt"]
+        ],
+        "mnemonic": "nand",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 31,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputInt"]
+        ],
+        "mnemonic": "xnor",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 32,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputBool"]
+        ],
+        "mnemonic": "eq",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 33,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputBool"]
+        ],
+        "mnemonic": "ne",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 34,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputBool"]
+        ],
+        "mnemonic": "lt",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 35,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputBool"]
+        ],
+        "mnemonic": "gt",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 36,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputBool"]
+        ],
+        "mnemonic": "le",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 37,
+        "arguments": [
+            ["int"],
+            ["int"],
+            ["outputBool"]
+        ],
+        "mnemonic": "ge",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 38,
+        "arguments": [
+            ["bool"],
+            ["color"],
+            ["color"],
+            ["outputColor"]
+        ],
+        "mnemonic": "tri",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 39,
+        "arguments": [
+            ["bool"],
+            ["outputBool"]
+        ],
+        "mnemonic": "lnot",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 40,
+        "arguments": [
+            ["bool"],
+            ["bool"],
+            ["outputBool"]
+        ],
+        "mnemonic": "lor",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 41,
+        "arguments": [
+            ["bool"],
+            ["bool"],
+            ["outputBool"]
+        ],
+        "mnemonic": "land",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 42,
+        "arguments": [
+            ["bool"],
+            ["bool"],
+            ["outputBool"]
+        ],
+        "mnemonic": "lxor",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 43,
+        "arguments": [
+            ["bool"],
+            ["bool"],
+            ["outputBool"]
+        ],
+        "mnemonic": "lnor",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 44,
+        "arguments": [
+            ["bool"],
+            ["bool"],
+            ["outputBool"]
+        ],
+        "mnemonic": "lnand",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 45,
+        "arguments": [
+            ["bool"],
+            ["bool"],
+            ["outputBool"]
+        ],
+        "mnemonic": "lxnor",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 46,
+        "arguments": [
+            ["bool"],
+            ["outputBool"]
+        ],
+        "mnemonic": "quant",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 47,
+        "arguments": [
+            ["pointer"],
+            ["outputPointer"]
+        ],
+        "mnemonic": "resolve",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 48,
+        "arguments": [
+            ["pointer"],
+            ["pointer"],
+            ["outputPointer"]
+        ],
+        "mnemonic": "consume",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 49,
+        "arguments": [
+            ["bool"],
+            ["pointer"]
+        ],
+        "mnemonic": "jumpunless",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 50,
+        "arguments": [
+            ["bool"]
+        ],
+        "mnemonic": "while",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 51,
+        "arguments": [
+            ["bool"]
+        ],
+        "mnemonic": "until",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 52,
+        "arguments": [
+            ["color", "color"]
+        ],
+        "mnemonic": "whileeq",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 53,
+        "arguments": [
+        ],
+        "mnemonic": "dial",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 54,
+        "arguments": [
+            ["pointer"]
+        ],
+        "mnemonic": "call",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 55,
+        "arguments": [
+            ["pointer"]
+        ],
+        "mnemonic": "callim",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 56,
+        "arguments": [
+        ],
+        "mnemonic": "ret",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 57,
+        "arguments": [
+            ["color"]
+        ],
+        "mnemonic": "retval",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 58,
+        "arguments": [
+            ["color"]
+        ],
+        "mnemonic": "push",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 59,
+        "arguments": [
+            ["pointer"]
+        ],
+        "mnemonic": "pushptr",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 60,
+        "arguments": [
+        ],
+        "mnemonic": "pushnothing",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 61,
+        "arguments": [
+            ["outputColor"]
+        ],
+        "mnemonic": "pop",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 62,
+        "arguments": [
+            ["outputPointer"]
+        ],
+        "mnemonic": "popptr",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 63,
+        "arguments": [
+        ],
+        "mnemonic": "ditch",
+        "next": "default",
+        "rules": []
+    },
+
+
+
+    {
+        "opcode": 512,
+        "arguments": [
+            ["float24"],
+            ["outputInt"]
+        ],
+        "mnemonic": "ftoi",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "0ifNaN",
+                "arguments": [0]
+            },
+            {
+                "rule": "0ifInfinite",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 513,
+        "arguments": [
+            ["int"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "itof",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 514,
+        "arguments": [
+            ["float24"],
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "fadd",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0, 1]
+            }
+        ]
+    },
+    {
+        "opcode": 515,
+        "arguments": [
+            ["float24"],
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "fsub",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0, 1]
+            }
+        ]
+    },
+    {
+        "opcode": 516,
+        "arguments": [
+            ["float24"],
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "fmult",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0, 1]
+            }
+        ]
+    },
+    {
+        "opcode": 517,
+        "arguments": [
+            ["float24"],
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "fdiv",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0, 1]
+            },
+            {
+                "rule": "NaNif0",
+                "arguments": [1]
+            }
+        ]
+    },
+    {
+        "opcode": 518,
+        "arguments": [
+            ["float24"],
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "fmod",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0, 1]
+            },
+            {
+                "rule": "NaNif0",
+                "arguments": [1]
+            }
+        ]
+    },
+    {
+        "opcode": 519,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "fneg",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 520,
+        "arguments": [
+            ["float24"],
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "fmax",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0, 1]
+            }
+        ]
+    },
+    {
+        "opcode": 521,
+        "arguments": [
+            ["float24"],
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "fmin",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0, 1]
+            }
+        ]
+    },
+    {
+        "opcode": 522,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "fabs",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 523,
+        "arguments": [
+            ["float24"],
+            ["float24"],
+            ["outputBool"]
+        ],
+        "mnemonic": "feq",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "falseIfNaN",
+                "arguments": [0, 1]
+            }
+        ]
+    },
+    {
+        "opcode": 524,
+        "arguments": [
+            ["float24"],
+            ["float24"],
+            ["outputBool"]
+        ],
+        "mnemonic": "fne",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "falseIfNaN",
+                "arguments": [0, 1]
+            }
+        ]
+    },
+    {
+        "opcode": 525,
+        "arguments": [
+            ["float24"],
+            ["float24"],
+            ["outputBool"]
+        ],
+        "mnemonic": "flt",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "falseIfNaN",
+                "arguments": [0, 1]
+            }
+        ]
+    },
+    {
+        "opcode": 526,
+        "arguments": [
+            ["float24"],
+            ["float24"],
+            ["outputBool"]
+        ],
+        "mnemonic": "fgt",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "falseIfNaN",
+                "arguments": [0, 1]
+            }
+        ]
+    },
+    {
+        "opcode": 527,
+        "arguments": [
+            ["float24"],
+            ["float24"],
+            ["outputBool"]
+        ],
+        "mnemonic": "fle",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "falseIfNaN",
+                "arguments": [0, 1]
+            }
+        ]
+    },
+    {
+        "opcode": 528,
+        "arguments": [
+            ["float24"],
+            ["float24"],
+            ["outputBool"]
+        ],
+        "mnemonic": "fge",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "falseIfNaN",
+                "arguments": [0, 1]
+            }
+        ]
+    },
+    {
+        "opcode": 529,
+        "arguments": [
+            ["float24"],
+            ["float24"],
+            ["outputBool"]
+        ],
+        "mnemonic": "fis",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 530,
+        "arguments": [
+            ["float24"],
+            ["outputBool"]
+        ],
+        "mnemonic": "isneg",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "falseIfNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 531,
+        "arguments": [
+            ["float24"],
+            ["outputBool"]
+        ],
+        "mnemonic": "isfinite",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "falseIfNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 532,
+        "arguments": [
+            ["float24"],
+            ["outputBool"]
+        ],
+        "mnemonic": "isnan",
+        "next": "default",
+        "rules": []
+    },
+    {
+        "opcode": 533,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "floor",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 534,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "ceil",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 535,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "trunc",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 536,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "round",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 537,
+        "arguments": [
+            ["float24"],
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "roundwp",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0, 1]
+            },
+            {
+                "rule": "NaNif0",
+                "arguments": [1]
+            }
+        ]
+    },
+    {
+        "opcode": 538,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "rcpr",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            },
+            {
+                "rule": "NaNif0",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 539,
+        "arguments": [
+            ["float24"],
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "pow",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0, 1]
+            }
+        ]
+    },
+    {
+        "opcode": 540,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "sqrt",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            },
+            {
+                "rule": "NaNifNegative",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 541,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "exp",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 542,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "exp2",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 543,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "exp10",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 544,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "ln",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            },
+            {
+                "rule": "NaNif0",
+                "arguments": [0]
+            },
+            {
+                "rule": "NaNifNegative",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 545,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "log2",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            },
+            {
+                "rule": "NaNif0",
+                "arguments": [0]
+            },
+            {
+                "rule": "NaNifNegative",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 546,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "log10",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            },
+            {
+                "rule": "NaNif0",
+                "arguments": [0]
+            },
+            {
+                "rule": "NaNifNegative",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 547,
+        "arguments": [
+            ["float24"],
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "log",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0, 1]
+            },
+            {
+                "rule": "NaNif0",
+                "arguments": [0]
+            },
+            {
+                "rule": "NaNifNegative",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 548,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "rad",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 549,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "deg",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 550,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "normang",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 551,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "sin",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 552,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "cos",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 553,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "tan",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 554,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "sec",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 555,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "csc",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 556,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "cot",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 557,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "asin",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 558,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "acos",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 559,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "atan",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 560,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "asec",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 561,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "acsc",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 562,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "acot",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 563,
+        "arguments": [
+            ["float24"],
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "atan2",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0, 1]
+            }
+        ]
+    },
+    {
+        "opcode": 564,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "sinh",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 565,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "cosh",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 566,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "tanh",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 567,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "sech",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 568,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "csch",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 569,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "coth",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 570,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "asinh",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 571,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "acosh",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 572,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "atanh",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 573,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "asech",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 574,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "acsch",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 575,
+        "arguments": [
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "acoth",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0]
+            }
+        ]
+    },
+    {
+        "opcode": 576,
+        "arguments": [
+            ["float24"],
+            ["float24"],
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "lerp",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0, 1, 2]
+            }
+        ]
+    },
+    {
+        "opcode": 577,
+        "arguments": [
+            ["float24"],
+            ["float24"],
+            ["float24"],
+            ["outputFloat24"]
+        ],
+        "mnemonic": "pslop",
+        "next": "default",
+        "rules": [
+            {
+                "rule": "NaNifNaN",
+                "arguments": [0, 1, 2]
+            }
+        ]
+    }
+]

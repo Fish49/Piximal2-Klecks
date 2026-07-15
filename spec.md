@@ -9,30 +9,25 @@ the [datasheet](https://docs.google.com/spreadsheets/d/1l8HzEkNCA6sCJ4xKUMFpFY8G
 - then there are n pointers, each to a thread definition, where n is the number of threads.
 
 ## Thread Definition
-- each thread definition has two pointers, one to the top of the stack, and the other to the instruction to be executed.
-- the stack top pointer points to the first pixel of the frame at the top of the stack.
-- the stack top is never used except for in `call` and `return`, and `stp`, `rstp`, `arg`, `loc`, `funcorigin`, and `funcos` (you do not need to define the stack top unless you plan to use functions in your program)
+- each thread definition has three pointers, one to the instruction to be executed, one to the bottom of the stack (frame), and one to the top of the stack.
+- the stack bottom pointer points to the first pixel in a stack frame (not including the return address and old stack bottom pointer). It can change during a functions execution, but it must be this when the return instruction is executed
+- the stack top pointer points to the pixel at the top of the stack.
+- the stack bottom and top pointers may be set to 0 if you dont plan to use the stack in your program (such as push, pop, call, and return)
 
 ## Stack and Stack Frames
-- each stack frame starts with 3 pointers:
- 1. the pointer to the function that stack frame is for
- 2. the pointer to the frame beneath this one in the stack (where the stack top pointer should be when this function returns). This pointer does not have to be smaller than the current stack top. It could jump somewhere else or even point to this stack frame (making a loop).
- 3. the pointer to where execution left off when this function was called (where the instruction pointer should be when this function returns). Note that this does not point to the instruction that *called* the function, but the one after that, the one to be executed *next*.
-- the stack frame then reserves space for arguments, then locals. how many arguments and locals to be reserved depend on the function itself (see below).
-- the stack is handled automatically by the `call` and `return` functions, but just like everything in piximal2, they can be unsafely manually edited by the program.
-- when a function returns, the stack top pointer is moved, but the pixels that made up that stack frame arent removed. they remain the same until they are overwritten by the next call. if you want to clean them up, you must do it manually.
-
-## Functions
-- the first pixel in a function definition says how many arguments that function takes (as an unsigned integer less than 2^24)
-- the second pixel in a function definition says how many pixels to reserve on the stack for that functions locals. (again as an unsigned int less than 2^24)
-- the third pixel and on are the code of the function.
-- arguments and locals can be accessed with the `arg` and `loc` special pointers
+- each stack frame starts with 2 pointers:
+ 1. the pointer to the old stack bottom (where to set the stack bottom pointer after this function returns)
+ 3. the return address, the pointer to where execution left off when this function was called (where the instruction pointer should be when this function returns). Note that this does not point to the instruction that *called* the function, but the one after that, the one to be executed *next*.
+- you can put things on the stack with push instructions, take things off the stack with pop instructions, and use dial, call, and ret instructions to use functions.
+- dial prepares the next stack frame without actually calling the next function. the intended way to do a function call is to dial, then push the arguments, then call, then use the return value, then ditch twice to clean up the stack frame.
+- when items are taken off the stack, nothing actually happens to them, the stack top pointer simply stops pointing to them. when the stack grows again, they are overwritten.
+- you can access items going up from the stack bottom pointer with sti, and access items going down from the stack top pointer with rsti.
 
 ## Pointers
 - there are two types of pointer: special and raw.
 - raw pointers are simply a pixel with the index they point to.
 - for huge images (more than 2^23 pixels), raw pointers will be multiple pixels long, big endian. There will be sufficiently many pixel per raw pointer such that every pixel can be represented in one less than the total available bits in that many pixels (basically you can point to any pixel on the image)
-- special pointers are a single pixel with the first bit active (the red value is greater than or equal to 128). the remaining bits specify the type of special pointer. (see the [data sheet](https://docs.google.com/spreadsheets/d/1l8HzEkNCA6sCJ4xKUMFpFY8GZ-6lLepWTM-r2CtAgQQ/edit?usp=sharing))
+- special pointers are a single pixel with the first bit active (the red value is greater than or equal to 128). the remaining bits specify the type of special pointer. (see the data sheet)
 - each pointer supports 4 operations: next index, literal, read, and write.
 - next index tells you what is the index of the first pixel not consumed by the definition of this pointer (the complete definition of a pointer may be any number of pixels, this tells you where it ends)
 - literal tells you exactly what the pointer is pointing *to*. for raw pointers this is just their value, but for `os` for example, it depends on the offset. some special pointers represent data that is not *in* the image. the literal value of these pointers will simply be the origin of the image.
@@ -44,6 +39,7 @@ the pix2 assembly language is a simple assembly language that compiles to an ima
 - comments are either single line (`// this is a comment`) or block (`/* this is a block comment */`), just like other languages you are familiar with. comments are removed during preprocessing so block comments can literally be in the middle of a word.
 - after preprocessing, the code is separated on whitespace into words.
 - if the word is a non-negative number in decimal, or prefixed and in binary, hexadecimal, or octal, then it is written to the image as is. (e.x. `10`, `404`, `0b0000_1111_0000_1111`, `0xff00aa`, `0o7531`)
+- if the word is a floating point number (that cant be interpreted otherwise, i.e. it must have a decimal point), then it is written to the image as the float24 representation of that number.
 - if a number is bigger than 24 bits, it is drawn mod 2^24.
 - if the word ends with a `:`, then it is a label. anywhere else (including before its definition) in the code where that label is used, it will be replaced with the address of that label.
 - if the word *begins* with a `:`, followed by a number, then it tells the compiler to start drawing from that address. this doesnt work for labels because i dont want to figure out how to handle possible loops/self-reference.
@@ -57,7 +53,7 @@ here is a simple example:
 comment */
 2 0 1 thread1
 thread1:
-0 ep1
+ep1 0 0
 result: 0
 ep1:
 add im 10 im 20 result
