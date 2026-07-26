@@ -1083,6 +1083,7 @@ Renaming a key across multiple language files:
   "piximal2-compile": "Compile",
   "piximal2-run": "Run",
   "piximal2-stop": "Stop",
+  "piximal2-transpile": "Transpile",
   "brush-pen-custom": "Custom",
   "brush-pen-add": "Add"
 }

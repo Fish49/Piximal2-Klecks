@@ -633,6 +633,14 @@
         "next": "default",
         "rules": []
     },
+    {
+        "opcode": 64,
+        "arguments": [
+        ],
+        "mnemonic": "popframe",
+        "next": "default",
+        "rules": []
+    },
 
 
 

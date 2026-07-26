@@ -10,12 +10,14 @@ import { getSharedFx } from '../../../fx-canvas/shared-fx';
 import { KlHistory } from '../../history/kl-history';
 import stepImg from 'url:/src/app/img/ui/piximal2-step.svg';
 import compileImg from 'url:/src/app/img/ui/piximal2-compile.svg';
+import transpileImg from 'url:/src/app/img/ui/piximal2-transpile.svg';
 import runImg from 'url:/src/app/img/ui/piximal2-run.svg';
 import stopImg from 'url:/src/app/img/ui/piximal2-stop.svg';
 import { Piximal2 } from '../../piximal2/piximal2';
 import { PointerListener } from '../../../bb/input/pointer-listener';
 import { createMatrixFromTransform } from '../../../bb/transform/create-matrix-from-transform';
 import { applyToPoint, inverse } from 'transformation-matrix';
+import { transpile } from '../../piximal2/llvmToPix2';
 
 export type TPiximal2UiParams = {
     klRootEl: HTMLElement;
@@ -62,6 +64,7 @@ export class Piximal2Ui {
     private runButton: HTMLButtonElement | undefined;
     private stopButton: HTMLButtonElement | undefined;
     private compileButton: HTMLButtonElement | undefined;
+    private transpileButton: HTMLButtonElement | undefined;
     private sourceBox: HTMLTextAreaElement | undefined;
     private pixelInfo: HTMLParagraphElement | undefined;
     private pointerListener: PointerListener | undefined;
@@ -182,6 +185,21 @@ This has been reported to Google.
             }
         });
 
+        this.transpileButton = BB.el({
+            tagName: 'button',
+            className: 'grid-button',
+            content: createButtonContent(LANG('piximal2-transpile'), transpileImg, false),
+            custom: {
+                tabIndex: '-1',
+            },
+            css: {
+                cssFloat: 'left',
+            },
+            onClick: () => {
+                this.sourceBox!.value = transpile(this.sourceBox!.value);
+            }
+        });
+
         this.runButton = BB.el({
             tagName: 'button',
             className: 'grid-button',
@@ -244,7 +262,7 @@ This has been reported to Google.
         this.sourceBox!.addEventListener("focusin", (e) => KL.DIALOG_COUNTER.increase());
         this.sourceBox!.addEventListener("focusout", (e) => KL.DIALOG_COUNTER.decrease());
 
-        BB.append(this.rootEl, [this.stepButton, this.compileButton, this.runButton, this.sourceBox, this.pixelInfo]);
+        BB.append(this.rootEl, [this.stepButton, this.compileButton, this.runButton, this.transpileButton, this.sourceBox, this.pixelInfo]);
 
         this.pointerListener = new PointerListener({
             target: this.piximal2.easel.getElement(),

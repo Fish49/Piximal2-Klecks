@@ -1,7 +1,7 @@
 import { Piximal2 } from "./piximal2";
 
 const sl_comment = /\/\/.*\n/g;
-const ml_comment = /\/\*.*\*(\/)/gms;
+const ml_comment = /\/\*.*\*(\/)/gs;
 const numberRE = /^[-+]?((0x[0-9a-fA-F_]+)|(0b[01_]+)|(0o[0-7_]+)|([0-9_]+))$/;
 const floatRE = /^[+-]?[0-9]+\.[0-9]+(e[+-]?[0-9]+)?$/;
 const ws = /\s+/g;
@@ -35,6 +35,7 @@ export let defaultKeywords: {[id: string]: BigInt} = {
     "reg":             25n         | (1n << 23n),
     "sti":             26n         | (1n << 23n),
     "rsti":            27n         | (1n << 23n),
+    "addr":            28n         | (1n << 23n),
 
     "fp0":             512n        | (1n << 23n),
     "fpn0":            513n        | (1n << 23n),
@@ -63,7 +64,7 @@ export function draw(s: string, pix2: Piximal2) {
     let kwrds: {[key: string]: bigint} = {};
     Object.assign(kwrds, defaultKeywords);
     s = s.replace(ml_comment, " ");
-    s = s.replace(sl_comment, " ");
+    s = s.replace(sl_comment, "\n");
     s = s.replaceAll("\\\n", "");
     let toks = s.split(ws);
     let terms: instruction[] = [];

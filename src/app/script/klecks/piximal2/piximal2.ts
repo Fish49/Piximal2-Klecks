@@ -15,7 +15,7 @@ import { canvasAndChangedTilesToLayerTiles } from "../history/push-helpers/canva
 import { Eyedropper } from '../canvas/eyedropper';
 import { Piximal2Ui } from '../ui/tool-tabs/piximal2-ui';
 // import INSTRUCTIONS_JSON from "./instructions.json";
-const INSTRUCTIONS_JSON: any = import("./instructions.json", {assert: {type: "json"}});
+const INSTRUCTIONS_JSON: any = import("./instructions.json", {with: {type: "json"}});
 (INSTRUCTIONS_JSON as Promise<Array<InstructionType>>).then((value) => {
     INSTRUCTIONS = instructionsFromJson(value);
 });
@@ -490,6 +490,7 @@ export class Piximal2 {
             case 25:
             case 26:
             case 27:
+            case 28:
                 return this.getNextIndAfterPointer(ind + 1);
             case 22:
                 for (let i = ind; true; i++) {
@@ -514,6 +515,7 @@ export class Piximal2 {
             case 9:
             case 18:
             case 22:
+            case 28:
             case 512:
             case 513:
             case 514:
@@ -573,7 +575,7 @@ export class Piximal2 {
                 return this.getLiteralPointer(this.getNextIndAfterPointer(this.getNextIndAfterPointer(this.getLiteralPointer(this.getThreadPointerInd()))));
             }
             case 25: {
-                return this.getNextIndAfterPointer(this.getNextIndAfterPointer(this.getNextIndAfterPointer(this.getThreadPointerInd()))) + this.colorToInt(this.readPointer(ind + 1));
+                return this.getNextIndAfterPointer(this.getNextIndAfterPointer(this.getNextIndAfterPointer(this.getLiteralPointer(this.getThreadPointerInd())))) + this.colorToInt(this.readPointer(ind + 1));
             }
             case 26: {
                 return this.getLiteralPointer(this.getNextIndAfterPointer(this.getLiteralPointer(this.getThreadPointerInd()))) + this.colorToInt(this.readPointer(ind + 1));
@@ -646,6 +648,8 @@ export class Piximal2 {
                 return this.getPixel(this.getLiteralPointer(ind));
             case 18:
                 return this.intToColor(this.threadIndex);
+            case 28:
+                return this.intToColor(this.getLiteralPointer(ind + 1));
         }
     }
 
@@ -669,6 +673,7 @@ export class Piximal2 {
             case 8:
             case 18:
             case 22:
+            case 28:
             case 512:
             case 513:
             case 514:
@@ -1144,6 +1149,8 @@ export class Piximal2 {
                         this.writePointerToInd(inputNums[0], this.getLiteralPointer(inputStackTop));
                         outputStackTop = inputStackTop - 1;
                         break;
+                    case 64:
+                        outputStackTop = inputStackBottom - 1; break;
 
                     case 529: outputBools[0] = (Object.is(inputNums[0], inputNums[1])); break;
                     case 530: outputBools[0] = (inputNums[0] < 0.0) || Object.is(inputNums[0], -0.0); break;
