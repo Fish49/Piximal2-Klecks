@@ -24,7 +24,7 @@ function sizeOfType(s: string) {
 
 function parseArgs(s: string) {
     let ret = [];
-    let m = s.matchAll(RegExp("(?<type>" + llvmType.source + ") (?<id>[%@]" + llvmId.source + ")", "g"));
+    let m = s.matchAll(RegExp("(?<type>" + llvmType.source + ") (?<id>([%@]" + llvmId.source + ")|(" + llvmLiteral.source  + "))", "g"));
     for (let match of m) {
         ret.push([sizeOfType(match.groups!["type"]), match.groups!["id"]]);
     }
@@ -129,8 +129,8 @@ function parse(s: string) {
             continue;
         }
 
-        m = RegExp("^(?<output>%" + llvmId.source + ") = (trunc|zext|sext|bitcast|ptrtoint|inttoptr) " + llvmType.source + " (?<input>[%@]" + llvmId.source +
-            ") to " + llvmType.source).exec(line);
+        m = RegExp("^(?<output>%" + llvmId.source + ") = (trunc|zext|sext|bitcast|ptrtoint|inttoptr) " + llvmType.source + " (?<input>([%@]" + llvmId.source +
+            ")|(" + llvmLiteral.source + ")) to " + llvmType.source).exec(line);
         if (m != null) {
             instructionArr.push(["cast", m.groups!["output"], m.groups!["input"]]);
             continue;
@@ -154,8 +154,124 @@ function parse(s: string) {
     return instructionArr;
 }
 
-function parseFunction(name: string, args: (number | string)[], instructions: any[][]) {
+function containsVariableDownstream(includingMe: boolean, variable: string, label: string, groups: {[id: string]: any[]}) {
+    if (includingMe && groups[label][3].has(variable)) {
+        return true;
+    }
+    for (let downstream of groups[variable][0]) {
+        if (containsVariableDownstream(true, variable, downstream, groups)) {
+            return true;
+        }
+    }
+    return false;
+}
 
+function addPrefixedVariable(set: Set<string>, name: string, variable: string) {
+    if (name.startsWith("%")) {
+        set.add(name + variable);
+    } else if (name.startsWith("@")) {
+        set.add(variable);
+    }
+}
+
+function getUsedVariables(name: string, instruction: any[]) {
+    let ret = new Set<string>;
+    if (instruction[0] == "branch") {
+        addPrefixedVariable(ret, name, instruction[1]);
+    } else if (instruction[0] == "binop") {
+        addPrefixedVariable(ret, name, instruction[3]);
+        addPrefixedVariable(ret, name, instruction[4]);
+    } else if (instruction[0] == "load") {
+        addPrefixedVariable(ret, name, instruction[3]);
+    } else if (instruction[0] == "store") {
+        addPrefixedVariable(ret, name, instruction[2]);
+        addPrefixedVariable(ret, name, instruction[3]);
+    } else if (instruction[0] == "getelementptr") {
+        addPrefixedVariable(ret, name, instruction[3]);
+        addPrefixedVariable(ret, name, instruction[4]);
+    } else if (instruction[0] == "retval") {
+        addPrefixedVariable(ret, name, instruction[2]);
+    }
+    return ret;
+}
+
+function getVariableString(variable: string, variables: {[id: string]: any[]}, stack: number[][]) {
+    if (variable.startsWith("@")) {
+        return variable;
+    }
+    if (variable.match("^" + llvmLiteral.source)) {
+        return "im " + variable;
+    }
+    if (Object.hasOwn(variables, variable)) {
+        return "sti im " + variables[variable];
+    }
+}
+
+function parseFunction(name: string, args: (number | string)[], instructions: any[][]) {
+    let blocks: {[id: string]: any[]} = {}; // i go to, i come from, instructions, variables
+    let currentLabel = name + "%0";
+    for (let instruction of instructions) {
+        if (instruction[0] == "label") {
+            currentLabel = name + "%" + instruction[1];
+            if (!Object.hasOwn(blocks, currentLabel)) {
+                blocks[currentLabel] = [[], [], [], new Set<string>];
+            }
+        } else {
+            blocks[currentLabel][2].push(instruction);
+        }
+
+        if (instruction[0] == "jump") {
+            blocks[currentLabel][0].push(instruction[1]);
+            if (Object.hasOwn(blocks, instruction[1])) {
+                blocks[instruction[1]][1].push(currentLabel);
+            } else {
+                blocks[instruction[1]] = [[], [currentLabel], [], new Set<string>];
+            }
+        } else if (instruction[0] == "branch") {
+            blocks[currentLabel][0].push(instruction[2]);
+            if (Object.hasOwn(blocks, instruction[2])) {
+                blocks[instruction[2]][1].push(currentLabel);
+            } else {
+                blocks[instruction[2]] = [[], [currentLabel], [], new Set<string>];
+            }
+            blocks[currentLabel][0].push(instruction[3]);
+            if (Object.hasOwn(blocks, instruction[3])) {
+                blocks[instruction[3]][1].push(currentLabel);
+            } else {
+                blocks[instruction[3]] = [[], [currentLabel], [], new Set<string>];
+            }
+        }
+
+        blocks[currentLabel][3] = blocks[currentLabel][3].union(getUsedVariables(name, instruction))
+    }
+    for (let block of Object.keys(blocks)) {
+        let newInstructions = [];
+        let ended = new Set<string>;
+        for (let instructionInd = blocks[block][2].length - 1; instructionInd >= 0; instructionInd--) {
+            newInstructions.push(blocks[block][2][instructionInd]);
+            for (let variable of getUsedVariables(name, blocks[block][2][instructionInd])) {
+                if (!ended.has(variable) && !containsVariableDownstream(false, variable, block, blocks)) {
+                    ended.add(variable);
+                    newInstructions.push(["free", variable]);
+                }
+            }
+        }
+        blocks[block][2] = newInstructions.toReversed();
+    }
+
+    let retLines = [name + ":"];
+    let variables = {}; // name: value
+    let stack = [];
+    for (let block of Object.keys(blocks)) {
+        if (block != name + "%0") {
+            retLines.push(block + ":");
+        }
+        for (let instruction of blocks[block][2]) {
+            if (instruction[0] == "binop") {
+
+            }
+        }
+    }
 }
 
 export function transpile(s: string) {
